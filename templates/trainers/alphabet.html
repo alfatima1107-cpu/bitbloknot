@@ -1,0 +1,109 @@
+<div class="tabs" id="al-tabs">
+  <button class="btn small active" data-tab="power">Мощность алфавита</button>
+  <button class="btn small" data-tab="own">Придумай свой алфавит</button>
+  <button class="btn small" data-tab="msg">Объём сообщения</button>
+</div>
+
+<div data-apane="power">
+  <p class="muted small">Двигай ползунок: сколько символов в алфавите (N) и сколько бит нужно на каждый символ (i)?</p>
+  <div class="row"><span class="muted">N =</span><input type="range" id="al-n" min="2" max="64" step="1" value="8" style="flex:1;min-width:200px"><b class="mono" id="al-nv" style="width:40px"></b></div>
+  <div class="row" style="margin-top:10px">
+    <div class="stat"><div class="k">Бит на символ</div><div class="v" id="al-i"></div></div>
+    <div class="stat" style="flex:1"><div class="k">Почему</div><div id="al-why"></div></div>
+  </div>
+  <div class="al-table" id="al-table"></div>
+</div>
+
+<div data-apane="own" class="hidden">
+  <p class="muted small">Придумай свой секретный алфавит: впиши символы (каждый — один раз). Компьютер посчитает, сколько бит нужно, и выдаст каждому символу код.</p>
+  <label class="small muted">Твой алфавит</label>
+  <input type="text" id="ow-alpha" value="АБВГДЕЖЗ" style="width:100%;margin:4px 0 10px" maxlength="64">
+  <div class="row"><div class="stat"><div class="k">N (символов)</div><div class="v" id="ow-n"></div></div><div class="stat"><div class="k">i (бит на символ)</div><div class="v" id="ow-i"></div></div></div>
+  <div class="al-table" id="ow-table"></div>
+  <label class="small muted" style="display:block;margin-top:10px">Слово из символов твоего алфавита</label>
+  <input type="text" id="ow-word" value="ВЕДЖ" style="width:100%;margin-top:4px">
+  <div class="stat" style="margin-top:8px"><div class="k">Код слова</div><div class="codeview" id="ow-code" style="white-space:normal;word-break:break-all"></div></div>
+  <div class="error-text hidden" id="ow-err"></div>
+</div>
+
+<div data-apane="msg" class="hidden">
+  <div class="card" style="background:var(--card-2)">
+    <div id="ms-q"></div>
+    <div class="row" style="margin-top:8px"><input type="text" id="ms-ans" inputmode="decimal" style="width:120px" placeholder="Ответ"><span class="muted">бит</span><button class="btn primary small" id="ms-check">Проверить</button><button class="btn small" id="ms-new">{{ icon('dice') }} Другая</button></div>
+    <div class="feedback hidden" id="ms-fb"></div>
+  </div>
+</div>
+
+<style>
+  #al-tabs .btn.active { border-color: var(--ac); color: var(--acs); background: var(--acb); }
+  .al-table { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 12px; }
+  .al-table div { background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-family: var(--mono); font-size: .85rem; display: flex; justify-content: space-between; }
+  .al-table b { color: var(--tx); }
+  .al-table span { color: var(--acs); }
+  .al-table div.extra { opacity: .45; border-style: dashed; }
+</style>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const bits = n => Math.max(1, Math.ceil(Math.log2(n)));
+  const bin = (v, b) => v.toString(2).padStart(b, "0");
+  const RU = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+
+  document.querySelectorAll("#al-tabs [data-tab]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#al-tabs [data-tab]").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll("[data-apane]").forEach(p => p.classList.toggle("hidden", p.dataset.apane !== b.dataset.tab));
+  }));
+
+  function table(el, symbols, i, total) {
+    el.innerHTML = symbols.map((s, k) => `<div><b>${s === " " ? "␣" : s}</b><span>${bin(k, i)}</span></div>`).join("") +
+      Array.from({ length: Math.min(total - symbols.length, 64) }, (_, k) => `<div class="extra"><b>·</b><span>${bin(symbols.length + k, i)}</span></div>`).join("");
+  }
+
+  function power() {
+    const n = +$("al-n").value, i = bits(n), p = 2 ** i;
+    $("al-nv").textContent = n;
+    $("al-i").textContent = i + " " + (i === 1 ? "бит" : i < 5 ? "бита" : "бит");
+    $("al-why").innerHTML = p === n
+      ? `${n} = 2<sup>${i}</sup> — ровно ${i}-битных кодов хватает на все символы.`
+      : `2<sup>${i - 1}</sup> = ${p / 2} — мало, а 2<sup>${i}</sup> = ${p} — хватает. Лишние ${p - n} кодов останутся свободными (пунктир).`;
+    table($("al-table"), [...RU.slice(0, n)], i, p);
+  }
+  $("al-n").addEventListener("input", power); power();
+
+  function own(e) {
+    const raw = $("ow-alpha").value;
+    const symbols = [...new Set([...raw])];
+    const err = $("ow-err"); err.classList.add("hidden");
+    if (symbols.length < 2) { $("ow-n").textContent = symbols.length; $("ow-i").textContent = "—"; $("ow-table").innerHTML = ""; $("ow-code").textContent = "Нужно хотя бы 2 символа"; return; }
+    const i = bits(symbols.length);
+    $("ow-n").textContent = symbols.length; $("ow-i").textContent = i;
+    table($("ow-table"), symbols, i, 2 ** i);
+    const word = [...$("ow-word").value];
+    const bad = word.filter(c => !symbols.includes(c));
+    if (bad.length) { err.textContent = "Этих символов нет в твоём алфавите: " + [...new Set(bad)].join(" "); err.classList.remove("hidden"); }
+    const code = word.filter(c => symbols.includes(c)).map(c => bin(symbols.indexOf(c), i));
+    $("ow-code").innerHTML = code.length ? code.join(" ") + `<div class="small muted" style="margin-top:6px">${code.length} символов × ${i} бит = <b>${code.length * i} бит</b></div>` : "—";
+    if (e && code.length >= 3 && !bad.length) BB.trainerDone();   // засчитываем, когда ученик сам что-то ввёл
+  }
+  $("ow-alpha").addEventListener("input", own); $("ow-word").addEventListener("input", own); own();
+
+  let q;
+  function newQ() {
+    const i = 1 + Math.floor(Math.random() * 6), n = 2 ** i, k = [10, 16, 20, 32, 50, 64, 100][Math.floor(Math.random() * 7)];
+    q = { n, k, i, ans: k * i };
+    $("ms-q").innerHTML = `Сообщение из <b>${k}</b> символов записано алфавитом из <b>${n}</b> символов. Сколько бит занимает сообщение?`;
+    $("ms-ans").value = ""; $("ms-fb").className = "feedback hidden";
+  }
+  $("ms-new").addEventListener("click", newQ);
+  $("ms-check").addEventListener("click", () => {
+    const raw = $("ms-ans").value.replace(/\s/g, "").replace(",", ".");
+    if (!raw) { BB.feedback($("ms-fb"), "bad", "Сначала введи ответ"); return; }
+    const v = Number(raw);
+    if (v === q.ans) { BB.feedback($("ms-fb"), "ok", `<div class="fh">Верно!</div>N = ${q.n} → i = ${q.i} бит; ${q.k} × ${q.i} = ${q.ans} бит.`); BB.trainerDone(); }
+    else if (v === q.k * q.n) BB.feedback($("ms-fb"), "warn", "<div class='fh'>Почти!</div>Ты умножил на N (количество символов). А нужно на i — сколько бит весит один символ.");
+    else BB.feedback($("ms-fb"), "bad", "Не совсем. Найди i из N = 2ⁱ и умножь на количество символов.");
+  });
+  newQ();
+})();
+</script>

@@ -1,0 +1,110 @@
+<div class="tabs" id="tx-tabs">
+  <button class="btn small active" data-tab="enc">Шифровальщик</button>
+  <button class="btn small" data-tab="dec">Расшифруй сообщение друга</button>
+</div>
+
+<div data-tpane="enc">
+  <p class="muted small">Напиши любой текст — и увидишь, как компьютер хранит каждый символ: его номер в таблице кодировки и двоичный код.</p>
+  <textarea id="tx-in" rows="2" style="width:100%" maxlength="60">Привет, Bit!</textarea>
+  <div class="row" style="margin:8px 0" id="tx-enc">
+    <span class="muted small">Кодировка:</span>
+    <button class="btn small" data-enc="ascii">ASCII (8 бит)</button>
+    <button class="btn small active" data-enc="cp1251">Windows-1251 (8 бит)</button>
+    <button class="btn small" data-enc="utf16">Unicode (16 бит)</button>
+  </div>
+  <div class="row">
+    <div class="stat"><div class="k">Символов</div><div class="v" id="tx-n"></div></div>
+    <div class="stat"><div class="k">Объём</div><div class="v" id="tx-vol"></div></div>
+  </div>
+  <div class="small muted" id="tx-note" style="margin-top:6px"></div>
+  <div class="tx-table" id="tx-table"></div>
+</div>
+
+<div data-tpane="dec" class="hidden">
+  <p class="muted small">Друг прислал секретное сообщение в кодировке Windows-1251: каждые 8 бит — одна буква. Расшифруй его с помощью таблицы.</p>
+  <div class="stat"><div class="k">Сообщение</div><div class="codeview" id="dc-msg" style="white-space:normal;font-size:1rem;word-spacing:6px"></div></div>
+  <details style="margin:10px 0"><summary class="small" style="cursor:pointer;color:var(--ac)">Показать таблицу кодов русских букв</summary><div class="tx-mini" id="dc-table"></div></details>
+  <div class="row"><input type="text" id="dc-ans" style="width:200px" placeholder="Расшифровка"><button class="btn primary small" id="dc-check2">Проверить</button><button class="btn small" id="dc-new2">{{ icon('dice') }} Другое</button></div>
+  <div class="feedback hidden" id="dc-fb2"></div>
+</div>
+
+<style>
+  #tx-tabs .btn.active, #tx-enc .btn.active { border-color: var(--ac); color: var(--acs); background: var(--acb); }
+  .tx-table { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 12px; }
+  .tx-table div { background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-family: var(--mono); font-size: .8rem; }
+  .tx-table b { font-size: 1.1rem; color: var(--tx); margin-right: 6px; }
+  .tx-table .num { color: var(--mut); }
+  .tx-table .bin { color: var(--acs); display: block; }
+  .tx-table div.bad { border-color: var(--err); }
+  .tx-mini { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 3px; margin-top: 8px; font-family: var(--mono); font-size: .78rem; }
+  .tx-mini span { background: var(--card-2); border-radius: 4px; padding: 2px 6px; }
+</style>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const bin = (v, b) => v.toString(2).padStart(b, "0");
+  let enc = "cp1251";
+
+  document.querySelectorAll("#tx-tabs [data-tab]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#tx-tabs [data-tab]").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll("[data-tpane]").forEach(p => p.classList.toggle("hidden", p.dataset.tpane !== b.dataset.tab));
+  }));
+
+  // Windows-1251: латиница как в ASCII, А–я = 192–255, Ё = 168, ё = 184
+  function cp1251(ch) {
+    const c = ch.charCodeAt(0);
+    if (c < 128) return c;
+    if (c >= 0x410 && c <= 0x44F) return c - 0x410 + 192;
+    if (ch === "Ё") return 168;
+    if (ch === "ё") return 184;
+    if (ch === "№") return 185;
+    return null;
+  }
+  function code(ch) {
+    if (enc === "ascii") { const c = ch.charCodeAt(0); return c < 128 ? c : null; }
+    if (enc === "cp1251") return cp1251(ch);
+    return ch.charCodeAt(0);
+  }
+
+  function render() {
+    const text = [...$("tx-in").value];
+    const b = enc === "utf16" ? 16 : 8;
+    let missing = 0;
+    $("tx-table").innerHTML = text.map(ch => {
+      const c = code(ch);
+      if (c === null) { missing++; return `<div class="bad"><b>${ch}</b><span class="num">нет в таблице</span></div>`; }
+      return `<div><b>${ch === " " ? "␣" : ch}</b><span class="num">№ ${c}</span><span class="bin">${bin(c, b)}</span></div>`;
+    }).join("");
+    $("tx-n").textContent = text.length;
+    $("tx-vol").textContent = `${text.length} × ${b} = ${text.length * b} бит = ${text.length * b / 8} байт`;
+    $("tx-note").textContent = missing
+      ? `В кодировке ${enc === "ascii" ? "ASCII" : "Windows-1251"} нет ${missing} символ(ов) — поэтому придумали Unicode, где есть буквы всех языков и даже смайлики.`
+      : enc === "utf16" ? "Unicode тратит 16 бит на символ, зато в нём есть буквы всех языков мира." : "Пробел и знаки препинания — тоже символы, у них свои коды.";
+  }
+  document.querySelectorAll("#tx-enc [data-enc]").forEach(b => b.addEventListener("click", () => {
+    enc = b.dataset.enc; document.querySelectorAll("#tx-enc [data-enc]").forEach(x => x.classList.toggle("active", x === b)); render();
+  }));
+  $("tx-in").addEventListener("input", render);
+  render();
+
+  // ---------- расшифровка ----------
+  const WORDS = ["КОД", "БИТ", "БАЙТ", "ФАЙЛ", "МЫШЬ", "ПИКСЕЛЬ", "ПРИВЕТ", "УРА", "СЕКРЕТ", "КЛАСС"];
+  const ABC = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
+  $("dc-table").innerHTML = [...ABC].map(ch => `<span>${ch} ${bin(cp1251(ch), 8)}</span>`).join("");
+  let word = "";
+  function decNew() {
+    let w; do { w = WORDS[Math.floor(Math.random() * WORDS.length)]; } while (w === word);
+    word = w; $("dc-msg").textContent = [...word].map(ch => bin(cp1251(ch), 8)).join(" ");
+    $("dc-ans").value = ""; $("dc-fb2").className = "feedback hidden";
+  }
+  $("dc-new2").addEventListener("click", decNew);
+  $("dc-check2").addEventListener("click", () => {
+    const v = $("dc-ans").value.trim().toUpperCase().replace("Ё", "Е");
+    if (!v) { BB.feedback($("dc-fb2"), "bad", "Сначала введи расшифровку"); return; }
+    if (v === word) { BB.feedback($("dc-fb2"), "ok", `<div class="fh">Верно! «${word}»</div>${word.length} букв × 8 бит = ${word.length * 8} бит = ${word.length} байт.`); BB.trainerDone(); }
+    else BB.feedback($("dc-fb2"), "bad", "Пока не так. Раздели сообщение на группы по 8 бит и найди каждую группу в таблице.");
+  });
+  decNew();
+})();
+</script>
