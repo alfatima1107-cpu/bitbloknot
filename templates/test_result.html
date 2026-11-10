@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Результат · {{ t.title }}{% endblock %}
+{% block content %}
+{% set pct = (100 * score / total)|round|int %}
+<div class="card">
+  <div class="row" style="gap:20px;align-items:center">
+    <div class="result-ring {{ '' if (info.success if review else info.passed) else 'bad' }}">
+      <b>{{ score }}/{{ total }}</b><span class="small muted">{{ pct }}%</span>
+    </div>
+    <div style="flex:1;min-width:240px">
+      {% if review %}
+        {% if info.success %}
+          <h1>Разминка пройдена!</h1>
+          <p class="muted">
+            {% if info.finished %}Тема «{{ t.title }}» закреплена надолго — повторений больше не нужно.
+            {% else %}Следующее повторение — {{ info.due.strftime('%d.%m') }}.{% endif %}
+          </p>
+        {% else %}
+          <h1>Нужно ещё потренироваться</h1>
+          <p class="muted">Повторим эту тему завтра. А сейчас можно заглянуть в шпаргалку или решить пару задач.</p>
+        {% endif %}
+      {% else %}
+        {% if info.passed %}
+          <h1>Тест сдан! Оценка <span class="grade g{{ info.grade }}" style="font-size:1.2rem">{{ info.grade }}</span></h1>
+          <p class="muted">Тема «{{ t.title }}» засчитана.
+            {% if info.review_due %}Повторим её {{ info.review_due.strftime('%d.%m') }}, чтобы не забылась.{% endif %}</p>
+        {% else %}
+          <h1>Пока не зачёт · оценка <span class="grade g{{ info.grade }}" style="font-size:1.2rem">{{ info.grade }}</span></h1>
+          <p class="muted">Для зачёта нужно 70%. Посмотри разбор ошибок ниже, повтори урок или реши задачи — и пересдай.</p>
+        {% endif %}
+      {% endif %}
+      <div class="row">
+        <a class="btn primary" href="{{ url_for('home') }}">На главную</a>
+        {% if not review %}<a class="btn" href="{{ url_for('topic', num=t.num, stage='test') }}">{{ icon('refresh') }} Пересдать</a>{% endif %}
+        {% if t.generator %}<a class="btn" href="{{ url_for('topic', num=t.num, stage='tasks') }}">{{ icon('pencil') }} Задачи</a>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 style="margin-top:22px">Разбор</h2>
+{% for r in results %}
+<div class="card {{ 'ok' if r.correct else 'bad' }}" style="margin-bottom:10px;background:var(--card)">
+  <div class="spread">
+    <span class="small muted">Вопрос {{ loop.index }}</span>
+    {% if r.correct %}<span style="color:var(--ok)">{{ icon('check') }} верно</span>
+    {% else %}<span style="color:var(--err)">{{ icon('x') }} ошибка</span>{% endif %}
+  </div>
+  <div style="margin:4px 0">{{ r.q.text|safe }}</div>
+  {% if not r.correct %}
+    <div class="small">Твой ответ: <b>{{ r.given or '—' }}</b> · Правильно: <b style="color:var(--ok)">{{ r.right }}</b></div>
+    {% if r.diagnosis %}<div class="feedback warn" style="margin-top:6px"><div class="fh">{{ icon('search') }} {{ r.diagnosis }}</div></div>{% endif %}
+    {% if r.q.explain %}<div class="small muted" style="margin-top:6px">{{ r.q.explain|safe }}</div>{% endif %}
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

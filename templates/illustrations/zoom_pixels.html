@@ -1,0 +1,28 @@
+<div class="row" style="gap:18px;justify-content:center">
+  <canvas id="zp-canvas" width="220" height="220" style="border:1px solid var(--line);border-radius:6px;image-rendering:pixelated;width:220px;height:220px"></canvas>
+  <div style="min-width:200px">
+    <label class="small muted" for="zp-range">Двигай ползунок</label>
+    <input id="zp-range" type="range" min="4" max="110" step="1" value="110" style="width:100%">
+    <div id="zp-text" class="mono" style="margin-top:8px;font-size:1.05rem"></div>
+    <div class="small muted" style="margin-top:4px">Чем меньше пикселей, тем грубее картинка</div>
+  </div>
+</div>
+<script>
+(function () {
+  const c = document.getElementById("zp-canvas"), x = c.getContext("2d");
+  const src = document.createElement("canvas"); src.width = src.height = 220;
+  const q = src.getContext("2d");
+  const g = q.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, "#1e3a8a"); g.addColorStop(1, "#f97316");
+  q.fillStyle = g; q.fillRect(0, 0, 220, 220);
+  q.fillStyle = "#fde68a"; q.beginPath(); q.arc(155, 75, 30, 0, 7); q.fill();
+  q.fillStyle = "#0f172a"; q.beginPath(); q.moveTo(0, 220); q.lineTo(65, 120); q.lineTo(120, 185); q.lineTo(165, 130); q.lineTo(220, 220); q.fill();
+  const s = document.createElement("canvas"), sx = s.getContext("2d");
+  function draw() {
+    const n = +document.getElementById("zp-range").value;
+    s.width = s.height = n; sx.drawImage(src, 0, 0, n, n);
+    x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, 220, 220);
+    document.getElementById("zp-text").textContent = n + " × " + n + " = " + (n * n).toLocaleString("ru-RU") + " пикселей";
+  }
+  document.getElementById("zp-range").addEventListener("input", draw); draw();
+})();
+</script>

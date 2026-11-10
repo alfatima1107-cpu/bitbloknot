@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Вход · БитБлокнот{% endblock %}
+{% block topbar %}
+<header class="topbar wrap spread">
+  <span></span>
+  <button class="btn ghost small" id="theme-toggle" type="button" title="Переключить тему">
+    <span class="t-dark">{{ icon('sun') }} Светлая</span><span class="t-light hidden">{{ icon('moon') }} Тёмная</span>
+  </button>
+</header>
+{% endblock %}
+{% block content %}
+<div class="login">
+  <div class="center" style="margin-bottom:24px">
+    <div class="logo">{{ icon('notebook') }} БитБлокнот</div>
+    <div class="muted">Информатика 7 класс · шаг за шагом</div>
+  </div>
+
+  <form class="card stack" method="post" novalidate>
+    <div>
+      <label class="muted small" for="name">Как тебя зовут?</label>
+      <input type="text" id="name" name="name" value="{{ name }}" maxlength="30" autocomplete="off"
+             placeholder="Например, Тимур" style="width:100%;margin-top:4px" class="{{ 'bad' if error }}" autofocus>
+      {% if error %}<div class="error-text">{{ error }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="muted small" style="margin-bottom:6px">Выбери аватар</div>
+      <div class="avatars">
+        {% for a in avatars %}
+        <label><input type="radio" name="avatar" value="{{ a }}" {{ 'checked' if a == avatar }}><span>{{ a }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    <button class="btn primary block" type="submit">Начать {{ icon('arrow-right') }}</button>
+  </form>
+
+  {% if users %}
+  <div class="center" style="margin-top:20px">
+    <div class="muted small" style="margin-bottom:8px">Уже занимался? Нажми на своё имя</div>
+    <div class="profiles">
+      {% for u in users %}
+      <form method="post">
+        <input type="hidden" name="name" value="{{ u['name'] }}">
+        <input type="hidden" name="avatar" value="{{ u['avatar'] }}">
+        <button class="btn small" type="submit">{{ u['avatar'] }} {{ u['name'] }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

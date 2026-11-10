@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Разминка · {{ t.title }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('home') }}" class="muted">{{ icon('arrow-left') }} На главную</a>
+<div class="card" style="margin-top:12px">
+  <h1 class="step-title">{{ icon('refresh') }} Разминка: {{ t.title }}</h1>
+  <p class="muted">Три задачи, чтобы тема не забылась. Ответь верно хотя бы на две — и следующее повторение будет позже.</p>
+  <form method="post" id="test-form" autocomplete="off">
+    {% include "_questions.html" %}
+    <div class="error-text hidden" id="test-error">Ответь на все вопросы</div>
+    <button class="btn primary" type="submit">Проверить {{ icon('check') }}</button>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/lesson.js') }}"></script>{% endblock %}
