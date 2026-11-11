@@ -54,13 +54,17 @@ def record_trainer(user_id, topic):
                (user_id, topic, db.now()))
 
 
-def record_task(user_id, topic, first_try: bool, error_type=None, kind="task") -> dict:
-    """Записывает решённую задачу и меняет уровень сложности. Возвращает новое состояние."""
+def record_task(user_id, topic, first_try: bool, error_type=None, kind="task", solved=None) -> dict:
+    """Записывает решённую задачу и меняет уровень сложности. Возвращает новое состояние.
+
+    first_try — решена с первой попытки; solved — решена в итоге (с первой или второй попытки).
+    """
     st = db.topic_state(user_id, topic)
     level = st["level"]
-    db.execute("INSERT INTO attempts(user_id, topic, kind, correct, error_type, level, ts) "
-               "VALUES(?, ?, ?, ?, ?, ?, ?)",
-               (user_id, topic, kind, int(first_try), error_type, level, db.now()))
+    solved = first_try if solved is None else solved
+    db.execute("INSERT INTO attempts(user_id, topic, kind, correct, error_type, level, ts, solved) "
+               "VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+               (user_id, topic, kind, int(first_try), error_type, level, db.now(), int(bool(solved))))
     ok, bad = st["streak_ok"], st["streak_bad"]
     changed = 0
     if first_try:
@@ -167,6 +171,68 @@ def next_stage(t: dict, s: dict) -> dict:
     if t.get("generator") and s["tasks_count"] < 5:
         return {"kind": "tasks", "label": "задачи"}
     return {"kind": "test", "label": "тест"}
+
+
+def activity_days(user_id) -> set[date]:
+    """Дни, в которые ученик что-то делал: шаг урока, задача, тест, разминка, тренажёр."""
+    rows = db.query(
+        "SELECT DISTINCT substr(ts, 1, 10) d FROM ("
+        "SELECT ts FROM steps_done WHERE user_id = :u UNION ALL SELECT ts FROM attempts WHERE user_id = :u "
+        "UNION ALL SELECT ts FROM tests WHERE user_id = :u UNION ALL SELECT ts FROM trainer_done WHERE user_id = :u)",
+        {"u": user_id})
+    return {date.fromisoformat(r["d"]) for r in rows if r["d"]}
+
+
+def streak_from_days(days: set[date], tday: date) -> int:
+    """Серия дней подряд. Один пропущенный день в любые 7 дней прощается.
+
+    Сегодняшний день ещё не закончился, поэтому если сегодня занятий не было, серию считаем со вчерашнего.
+    Два пропуска подряд или два пропуска ближе чем за неделю — серия сгорает.
+    """
+    if not days:
+        return 0
+    d = tday if tday in days else tday - timedelta(days=1)
+    first = min(days)
+    count, skips = 0, []
+    while d >= first:
+        if d in days:
+            count += 1
+        elif (d - timedelta(days=1)) in days and all(abs((s - d).days) >= 7 for s in skips):
+            skips.append(d)          # прощённый пропуск
+        else:
+            break
+        d -= timedelta(days=1)
+    return count
+
+
+def streak(user_id) -> dict:
+    """Текущая серия и рекорд. Рекорд сохраняется в базе."""
+    cur = streak_from_days(activity_days(user_id), today())
+    user = db.user_by_id(user_id)
+    best = max(cur, user["best_streak"] or 0)
+    if best != (user["best_streak"] or 0):
+        db.update_user(user_id, best_streak=best)
+    return {"current": cur, "best": best}
+
+
+def profile_stats(user_id) -> dict:
+    """Статистика для личного кабинета."""
+    row = db.query("SELECT COUNT(*) n, SUM(correct) ok FROM attempts WHERE user_id = ? AND kind = 'task'",
+                   (user_id,), one=True)
+    n, ok = row["n"], row["ok"] or 0
+    passed = db.query("SELECT COUNT(*) c FROM (SELECT topic, MAX(100.0 * score / total) b FROM tests "
+                      "WHERE user_id = ? GROUP BY topic) WHERE b >= ?", (user_id, PASS), one=True)["c"]
+    errs = db.query("SELECT error_type, COUNT(*) c FROM attempts WHERE user_id = ? AND error_type IS NOT NULL "
+                    "GROUP BY error_type ORDER BY c DESC LIMIT 3", (user_id,))
+    return {
+        "tasks": n,
+        "first_try_pct": round(100 * ok / n) if n else None,
+        "passed": passed,
+        "topics_total": len(course.topics()),
+        "top_errors": [{"reason": errors.reason(r["error_type"]), "count": r["c"]} for r in errs
+                       if errors.reason(r["error_type"])],
+        "streak": streak(user_id),
+    }
 
 
 def top_error(user_id, topic, days=14):

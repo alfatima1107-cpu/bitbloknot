@@ -1,0 +1,14 @@
+{# Экранная цифровая клавиатура для PIN. Использование: {% from "_pinpad.html" import pinpad %} {{ pinpad("pin", "PIN") }} #}
+{% macro pinpad(name, label, autofocus=false) %}
+<div class="pinpad" data-name="{{ name }}" {{ 'data-autofocus' if autofocus }}>
+  <div class="small muted pin-label">{{ label }}</div>
+  <input type="hidden" name="{{ name }}" value="">
+  <div class="pin-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="pin-keys">
+    {% for k in ["1","2","3","4","5","6","7","8","9"] %}<button type="button" class="pin-key" data-k="{{ k }}">{{ k }}</button>{% endfor %}
+    <button type="button" class="pin-key pin-del" data-k="del" aria-label="Стереть цифру">⌫</button>
+    <button type="button" class="pin-key" data-k="0">0</button>
+    <button type="button" class="pin-key pin-clear" data-k="clear" aria-label="Стереть всё">✕</button>
+  </div>
+</div>
+{% endmacro %}

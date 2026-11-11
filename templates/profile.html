@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "_pinpad.html" import pinpad %}
+{% block title %}Личный кабинет · БитБлокнот{% endblock %}
+{% block content %}
+<a href="{{ url_for('home') }}" class="muted">{{ icon('arrow-left') }} На главную</a>
+
+<section class="card" style="margin-top:12px">
+  <div class="spread">
+    <div class="row">
+      <span class="avatar" style="width:64px;height:64px;font-size:2.2rem">{{ g.user['avatar'] }}</span>
+      <div><h1 style="margin:0">{{ g.user['name'] }}</h1><div class="muted small">Личный кабинет</div></div>
+    </div>
+    <a class="btn logout-btn" href="{{ url_for('logout') }}">{{ icon('logout') }} Выйти</a>
+  </div>
+  {% if msg %}<div class="feedback ok" style="margin-top:12px"><div class="fh">{{ icon('check') }} {{ msg }}</div></div>{% endif %}
+</section>
+
+<div class="stats-grid" style="margin-top:14px">
+  <div class="stat"><div class="k">Решено задач</div><div class="v">{{ stats.tasks }}</div></div>
+  <div class="stat"><div class="k">С первой попытки</div><div class="v">{{ (stats.first_try_pct ~ '%') if stats.first_try_pct is not none else '—' }}</div></div>
+  <div class="stat"><div class="k">Сдано тем</div><div class="v">{{ stats.passed }} из {{ stats.topics_total }}</div></div>
+  <div class="stat"><div class="k">Серия дней 🔥</div><div class="v">{{ stats.streak.current }} <span class="small muted">рекорд {{ stats.streak.best }}</span></div></div>
+</div>
+<p class="small muted" style="margin-top:6px">Серия — сколько дней подряд ты занимаешься. Один пропущенный день в неделю прощается.</p>
+
+<section class="card" style="margin-top:14px">
+  <h2>🏅 Мои достижения</h2>
+  {% if badges %}
+  <div class="badges">
+    {% for b in badges %}
+    <div class="badge-card"><div class="b-icon">{{ b.icon }}</div><div><b>{{ b.title }}</b><div class="small muted">{{ b.desc }}</div></div></div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Пока пусто. Решай задачи, сдавай темы и занимайся каждый день — значки появятся сами!</p>
+  {% endif %}
+</section>
+
+{% if stats.top_errors %}
+<section class="card" style="margin-top:14px">
+  <h2>🔍 Частые ошибки</h2>
+  <ul style="margin:0;padding-left:1.2em">
+    {% for e in stats.top_errors %}<li>Ты {{ e.reason }} — {{ e.count }} раз(а)</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<div class="row" style="align-items:flex-start;gap:14px;margin-top:14px">
+  <form class="card" method="post" action="{{ url_for('profile_avatar') }}" style="flex:1;min-width:280px">
+    <h2>Сменить аватар</h2>
+    <div class="avatars">
+      {% for a in avatars %}
+      <label><input type="radio" name="avatar" value="{{ a }}" {{ 'checked' if a == g.user['avatar'] }}><span>{{ a }}</span></label>
+      {% endfor %}
+    </div>
+    <button class="btn primary" type="submit" style="margin-top:12px">Сохранить аватар</button>
+  </form>
+
+  <form class="card stack" method="post" action="{{ url_for('profile_pin') }}" id="pin-form" style="flex:1;min-width:280px" novalidate>
+    <h2 style="margin:0">Сменить PIN</h2>
+    <div class="row" style="align-items:flex-start;gap:16px">
+      {{ pinpad("old", "Старый PIN") }}
+      {{ pinpad("pin", "Новый PIN") }}
+      {{ pinpad("pin2", "Повтори новый") }}
+    </div>
+    {% if error %}<div class="error-text">{{ error }}</div>{% endif %}
+    <div class="error-text hidden" id="client-error"></div>
+    <button class="btn primary" type="submit">Сменить PIN</button>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pinpad.js') }}"></script>
+<script>
+document.getElementById("pin-form").addEventListener("submit", function (e) {
+  const v = n => this.querySelector(`input[name=${n}]`).value;
+  const msg = v("old").length !== 4 ? "Набери старый PIN" : v("pin").length !== 4 ? "Придумай новый PIN из 4 цифр"
+            : v("pin") !== v("pin2") ? "Новые PIN-коды не совпадают" : "";
+  const err = document.getElementById("client-error");
+  if (msg) { e.preventDefault(); err.textContent = msg; err.classList.remove("hidden"); }
+});
+</script>
+{% endblock %}

@@ -10,19 +10,22 @@ from pathlib import Path
 
 from flask import Flask, abort, g, jsonify, redirect, render_template, request, session, url_for
 
-from tutor import adaptive, checker, course, db, generators, quiz
+from tutor import achievements, adaptive, auth, checker, course, db, generators, quiz
 from tutor.icons import icon
 
 BASE = Path(__file__).resolve().parent
-AVATARS = ["🤖", "🚀", "💻", "👻", "🐱", "🪐"]
+AVATARS = ["🤖", "🚀", "💻", "👻", "🐱", "🪐", "🦊", "🐼", "🐸", "🦉", "🐙", "🦄",
+           "🐶", "🐯", "🐧", "🐢", "👾", "🛸", "⚡", "🎮", "⚽", "🏀", "🎸", "🧠"]
 
 
 def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__)
     data_dir = BASE / "data"
     data_dir.mkdir(exist_ok=True)
-    app.config["DATABASE"] = str(data_dir / "bitbloknot.db")
+    # BB_DATABASE — другой файл базы (например, для проверки, чтобы не трогать настоящий прогресс)
+    app.config["DATABASE"] = os.environ.get("BB_DATABASE") or str(data_dir / "bitbloknot.db")
     app.config["SECRET_KEY"] = _secret_key(data_dir)
+    app.config["SESSION_COOKIE_NAME"] = os.environ.get("BB_COOKIE", "session")
     if test_config:
         app.config.update(test_config)
 
@@ -45,10 +48,26 @@ def _secret_key(data_dir: Path) -> str:
 def login_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
-        if g.user is None:
+        if g.user is None or not g.user["pin_hash"]:
+            session.pop("user_id", None)
             return redirect(url_for("login"))
         return view(*args, **kwargs)
     return wrapper
+
+
+def award(uid) -> list[dict]:
+    """Проверяет достижения после действия ученика и запоминает новые для всплывающего сообщения."""
+    new = achievements.check(uid)
+    if new:
+        session["badges"] = session.get("badges", []) + new
+    return new
+
+
+def start_session(user_id):
+    session.clear()
+    session["user_id"] = user_id
+    db.touch_user(user_id)
+    g.user = db.user_by_id(user_id)   # чтобы шапка (с кнопкой «Выйти») сразу видела ученика
 
 
 def register_routes(app: Flask):
@@ -58,36 +77,110 @@ def register_routes(app: Flask):
         uid = session.get("user_id")
         g.user = db.user_by_id(uid) if uid else None
 
-    # ---------- вход ----------
+    @app.context_processor
+    def header_data():
+        """Данные для шапки на каждой странице: серия дней и новые достижения."""
+        data = {"streak": None, "new_badges": []}
+        if g.get("user") is not None and g.user["pin_hash"]:
+            data["streak"] = adaptive.streak(g.user["id"])["current"]
+            data["new_badges"] = session.pop("badges", [])
+        return data
+
+    # ---------- регистрация и вход ----------
+
+    @app.route("/register", methods=["GET", "POST"])
+    def register():
+        form = {"login": "", "avatar": AVATARS[0]}
+        error = None
+        if request.method == "POST":
+            form["login"] = request.form.get("login", "").strip()
+            form["avatar"] = request.form.get("avatar") if request.form.get("avatar") in AVATARS else AVATARS[0]
+            pin, pin2 = request.form.get("pin", ""), request.form.get("pin2", "")
+            error = auth.login_error(form["login"]) or auth.pin_error(pin, pin2)
+            if not error and db.find_user(form["login"]):
+                error = "Такой логин уже занят. Придумай другой"
+            if not error:
+                uid = db.create_user(form["login"], form["avatar"], auth.hash_pin(pin))
+                start_session(uid)
+                return render_template("welcome.html", login=form["login"], pin=pin,
+                                       avatar=form["avatar"], reason="register")
+        return render_template("register.html", avatars=AVATARS, form=form, error=error)
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
-        error = None
-        name = ""
-        avatar = AVATARS[0]
+        error, locked, login_value = None, 0, ""
         if request.method == "POST":
-            name = " ".join(request.form.get("name", "").split())
-            avatar = request.form.get("avatar", AVATARS[0])
-            if avatar not in AVATARS:
-                avatar = AVATARS[0]
-            if not name:
-                error = "Напиши своё имя"
-            elif len(name) > 30:
-                error = "Имя слишком длинное — не больше 30 букв"
-            else:
-                user = db.find_user(name)
-                uid = user["id"] if user else db.create_user(name, avatar)
-                db.touch_user(uid)
-                session.clear()
-                session["user_id"] = uid
+            login_value = request.form.get("login", "").strip()
+            res = auth.try_login(login_value, request.form.get("pin", ""))
+            if res["status"] == "ok":
+                start_session(res["user"]["id"])
+                award(res["user"]["id"])
                 return redirect(url_for("home"))
-        return render_template("login.html", avatars=AVATARS, users=db.all_users(),
-                               error=error, name=name, avatar=avatar)
+            if res["status"] == "no_pin":
+                session.clear()
+                session["pending_user"] = res["user"]["id"]
+                return redirect(url_for("set_pin"))
+            if res["status"] == "locked":
+                locked = res["seconds"]
+                error = "Слишком много неверных попыток. Подожди немного"
+            else:
+                error = "Неверный логин или PIN"
+                if res.get("left") is not None and res["left"] <= 2:
+                    error += f". Осталось попыток: {res['left']}"
+        return render_template("login.html", error=error, locked=locked, login_value=login_value)
+
+    @app.route("/set-pin", methods=["GET", "POST"])
+    def set_pin():
+        """Старый профиль (созданный до появления PIN) один раз придумывает PIN."""
+        user = db.user_by_id(session.get("pending_user")) if session.get("pending_user") else None
+        if user is None or user["pin_hash"]:
+            return redirect(url_for("login"))
+        error = None
+        if request.method == "POST":
+            pin, pin2 = request.form.get("pin", ""), request.form.get("pin2", "")
+            error = auth.pin_error(pin, pin2)
+            if not error:
+                db.update_user(user["id"], pin_hash=auth.hash_pin(pin), fail_count=0, locked_until=None)
+                start_session(user["id"])
+                return render_template("welcome.html", login=user["name"], pin=pin,
+                                       avatar=user["avatar"], reason="set_pin")
+        return render_template("set_pin.html", user=user, error=error)
 
     @app.route("/logout")
     def logout():
         session.clear()
         return redirect(url_for("login"))
+
+    # ---------- личный кабинет ----------
+
+    @app.route("/profile")
+    @login_required
+    def profile():
+        return render_template("profile.html", stats=adaptive.profile_stats(g.user["id"]),
+                               badges=achievements.owned(g.user["id"]), avatars=AVATARS,
+                               msg=request.args.get("msg"), error=None)
+
+    @app.post("/profile/avatar")
+    @login_required
+    def profile_avatar():
+        avatar = request.form.get("avatar")
+        if avatar in AVATARS:
+            db.update_user(g.user["id"], avatar=avatar)
+        return redirect(url_for("profile", msg="Аватар изменён"))
+
+    @app.post("/profile/pin")
+    @login_required
+    def profile_pin():
+        old, pin, pin2 = (request.form.get(k, "") for k in ("old", "pin", "pin2"))
+        error = None if auth.pin_ok(g.user, old) else "Старый PIN введён неверно"
+        error = error or auth.pin_error(pin, pin2)
+        if error:
+            return render_template("profile.html", stats=adaptive.profile_stats(g.user["id"]),
+                                   badges=achievements.owned(g.user["id"]), avatars=AVATARS,
+                                   msg=None, error=error), 400
+        db.update_user(g.user["id"], pin_hash=auth.hash_pin(pin))
+        return render_template("welcome.html", login=g.user["name"], pin=pin,
+                               avatar=g.user["avatar"], reason="change_pin")
 
     # ---------- главная ----------
 
@@ -146,6 +239,7 @@ def register_routes(app: Flask):
         t, lesson, s = topic_context(num)
         if 0 <= index < len(lesson["steps"]):
             adaptive.record_step(g.user["id"], num, index)
+            award(g.user["id"])
         if index + 1 < len(lesson["steps"]):
             return redirect(url_for("topic", num=num, stage="step", i=index + 1))
         if t.get("trainer"):
@@ -170,6 +264,7 @@ def register_routes(app: Flask):
                            (g.user["id"], num, r["error_type"], db.now()))
         info = adaptive.record_test(g.user["id"], num, score, len(questions))
         db.drop_active(g.user["id"], f"test:{num}")
+        award(g.user["id"])
         return render_template("test_result.html", t=t, score=score, total=len(questions),
                                results=results, info=info, review=False)
 
@@ -187,9 +282,11 @@ def register_routes(app: Flask):
             questions = active["questions"]
             score, results = quiz.grade(questions, request.form)
             for r in results:
-                adaptive.record_task(g.user["id"], num, r["correct"], r["error_type"], kind="review")
+                adaptive.record_task(g.user["id"], num, r["correct"], r["error_type"], kind="review",
+                                     solved=r["correct"])
             info = adaptive.record_review(g.user["id"], num, score, len(questions))
             db.drop_active(g.user["id"], slot)
+            award(g.user["id"])
             return render_template("test_result.html", t=t, score=score, total=len(questions),
                                    results=results, info=info, review=True)
         questions = quiz.build(num, count=3)
@@ -226,21 +323,24 @@ def register_routes(app: Flask):
             return jsonify({"result": "invalid", "message": res["message"]})
         active["attempts"] += 1
         if res["correct"]:
-            state = adaptive.record_task(g.user["id"], num, active["attempts"] == 1, active["first_error"])
+            state = adaptive.record_task(g.user["id"], num, active["attempts"] == 1, active["first_error"],
+                                         solved=True)
             db.drop_active(g.user["id"], slot)
             return jsonify({"result": "correct", "first_try": active["attempts"] == 1,
-                            "solution": task["solution"], **_level_payload(state)})
+                            "solution": task["solution"], "badges": achievements.check(g.user["id"]),
+                            **_level_payload(state)})
         if active["attempts"] == 1:
             active["first_error"] = res["error_type"]
             db.save_active(g.user["id"], slot, active)
             return jsonify({"result": "hint", "diagnosed": res["error_type"] is not None,
                             "message": checker.feedback_hint(task, res["error_type"])})
-        state = adaptive.record_task(g.user["id"], num, False, active["first_error"] or res["error_type"])
+        state = adaptive.record_task(g.user["id"], num, False, active["first_error"] or res["error_type"],
+                                     solved=False)
         db.drop_active(g.user["id"], slot)
         return jsonify({"result": "solution", "solution": task["solution"],
                         "answer": checker.display_answer(task),
                         "diagnosis": checker.feedback_hint(task, res["error_type"]) if res["error_type"] else None,
-                        **_level_payload(state)})
+                        "badges": achievements.check(g.user["id"]), **_level_payload(state)})
 
     def _level_payload(state):
         return {"level": state["level"], "level_name": adaptive.LEVEL_NAMES[state["level"]],
@@ -251,7 +351,7 @@ def register_routes(app: Flask):
     def api_trainer_done(num):
         course.topic(num) or abort(404)
         adaptive.record_trainer(g.user["id"], num)
-        return jsonify({"ok": True})
+        return jsonify({"ok": True, "badges": achievements.check(g.user["id"])})
 
 
 app = create_app() if __name__ == "__main__" else None

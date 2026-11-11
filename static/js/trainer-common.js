@@ -6,7 +6,10 @@ BB.trainerDone = function () {
   const root = document.getElementById("trainer");
   if (!root || root.dataset.sent) return;
   root.dataset.sent = "1";
-  fetch(root.dataset.doneUrl, { method: "POST" }).catch(() => {});
+  fetch(root.dataset.doneUrl, { method: "POST" })
+    .then(r => r.json())
+    .then(d => { if (window.BB_TOAST && d.badges) BB_TOAST.badges(d.badges); })
+    .catch(() => {});
 };
 
 // Красивая запись числа: 24576 → «24 576».

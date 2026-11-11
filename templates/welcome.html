@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Сфотографируй меня! · БитБлокнот{% endblock %}
+{% block content %}
+<div class="login" style="max-width:520px">
+  <div class="center" style="margin-bottom:14px">
+    <h1 style="margin:0">📸 Сфотографируй меня!</h1>
+    <p class="muted" style="margin:6px 0 0">
+      {% if reason == 'change_pin' %}PIN изменён. {% elif reason == 'set_pin' %}PIN сохранён. {% else %}Аккаунт создан! {% endif %}
+      Сфотографируй эту карточку на телефон, чтобы не забыть логин и PIN.
+    </p>
+  </div>
+  <div class="login-card">
+    <div class="lc-head"><span class="logo" style="font-size:1rem">{{ icon('notebook') }} БитБлокнот</span><span class="small muted">карточка входа</span></div>
+    <div class="lc-avatar">{{ avatar }}</div>
+    <div class="lc-row"><span class="muted">Логин</span><b class="mono">{{ login }}</b></div>
+    <div class="lc-row"><span class="muted">PIN</span><b class="mono lc-pin">{{ pin }}</b></div>
+    <div class="small muted center" style="margin-top:10px">Никому не показывай PIN</div>
+  </div>
+  <div class="center" style="margin-top:18px">
+    <a class="btn primary" href="{{ url_for('profile') if reason == 'change_pin' else url_for('home') }}" id="done-btn">{{ icon('check') }} Я сфотографировал</a>
+  </div>
+</div>
+{% endblock %}

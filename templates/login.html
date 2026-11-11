@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pinpad.html" import pinpad %}
 {% block title %}Вход · БитБлокнот{% endblock %}
 {% block topbar %}
 <header class="topbar wrap spread">
@@ -10,42 +11,57 @@
 {% endblock %}
 {% block content %}
 <div class="login">
-  <div class="center" style="margin-bottom:24px">
+  <div class="center" style="margin-bottom:20px">
     <div class="logo">{{ icon('notebook') }} БитБлокнот</div>
     <div class="muted">Информатика 7 класс · шаг за шагом</div>
   </div>
 
-  <form class="card stack" method="post" novalidate>
+  <form class="card stack" method="post" id="login-form" novalidate autocomplete="off">
+    <h2 style="margin:0">Вход</h2>
     <div>
-      <label class="muted small" for="name">Как тебя зовут?</label>
-      <input type="text" id="name" name="name" value="{{ name }}" maxlength="30" autocomplete="off"
-             placeholder="Например, Тимур" style="width:100%;margin-top:4px" class="{{ 'bad' if error }}" autofocus>
-      {% if error %}<div class="error-text">{{ error }}</div>{% endif %}
+      <label class="muted small" for="login">Логин</label>
+      <input type="text" id="login" name="login" value="{{ login_value }}" maxlength="20" autocomplete="username"
+             placeholder="Твой логин" style="width:100%;margin-top:4px" {{ 'autofocus' if not login_value }}>
     </div>
-    <div>
-      <div class="muted small" style="margin-bottom:6px">Выбери аватар</div>
-      <div class="avatars">
-        {% for a in avatars %}
-        <label><input type="radio" name="avatar" value="{{ a }}" {{ 'checked' if a == avatar }}><span>{{ a }}</span></label>
-        {% endfor %}
-      </div>
-    </div>
-    <button class="btn primary block" type="submit">Начать {{ icon('arrow-right') }}</button>
+    {{ pinpad("pin", "PIN — 4 цифры (можно нажимать цифры на клавиатуре)") }}
+    {% if error %}<div class="error-text" id="login-error">{{ error }}</div>{% endif %}
+    <div class="error-text hidden" id="client-error"></div>
+    {% if locked %}<div class="feedback warn" id="lock-box" data-seconds="{{ locked }}"><div class="fh">⏳ Вход заблокирован на <span id="lock-left">{{ locked }}</span> с</div>Это защита от подбора PIN.</div>{% endif %}
+    <button class="btn primary block" type="submit" id="login-btn">Войти {{ icon('arrow-right') }}</button>
   </form>
 
-  {% if users %}
-  <div class="center" style="margin-top:20px">
-    <div class="muted small" style="margin-bottom:8px">Уже занимался? Нажми на своё имя</div>
-    <div class="profiles">
-      {% for u in users %}
-      <form method="post">
-        <input type="hidden" name="name" value="{{ u['name'] }}">
-        <input type="hidden" name="avatar" value="{{ u['avatar'] }}">
-        <button class="btn small" type="submit">{{ u['avatar'] }} {{ u['name'] }}</button>
-      </form>
-      {% endfor %}
-    </div>
+  <div class="center" style="margin-top:18px">
+    <span class="muted">Ещё нет аккаунта?</span>
+    <a class="btn" href="{{ url_for('register') }}" style="margin-left:6px">Зарегистрироваться</a>
   </div>
-  {% endif %}
+  <p class="center small muted" style="margin-top:14px">Забыл PIN? Посмотри фото, которое ты сделал при регистрации 📸</p>
 </div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pinpad.js') }}"></script>
+<script>
+(function () {
+  const form = document.getElementById("login-form"), err = document.getElementById("client-error");
+  const login = document.getElementById("login"), btn = document.getElementById("login-btn");
+  login.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); login.blur(); } });
+  form.addEventListener("submit", e => {
+    const pin = form.querySelector("input[name=pin]").value;
+    const msg = !login.value.trim() ? "Введи логин" : pin.length !== 4 ? "Набери PIN из 4 цифр" : "";
+    if (msg) { e.preventDefault(); err.textContent = msg; err.classList.remove("hidden"); }
+  });
+  document.addEventListener("pinchange", () => {
+    err.classList.add("hidden");
+    if (form.querySelector("input[name=pin]").value.length === 4 && login.value.trim() && !btn.disabled) form.requestSubmit();
+  });
+  login.addEventListener("input", () => err.classList.add("hidden"));
+  const lock = document.getElementById("lock-box");
+  if (lock) {
+    let s = +lock.dataset.seconds; btn.disabled = true;
+    const t = setInterval(() => {
+      s--; document.getElementById("lock-left").textContent = s;
+      if (s <= 0) { clearInterval(t); lock.remove(); btn.disabled = false; const e = document.getElementById("login-error"); if (e) e.remove(); }
+    }, 1000);
+  }
+})();
+</script>
 {% endblock %}

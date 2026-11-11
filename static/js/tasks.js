@@ -86,6 +86,7 @@
       return;
     }
     finished = true; checkBtn.disabled = true;
+    if (window.BB_TOAST && r.badges) BB_TOAST.badges(r.badges);
     $("solved").textContent = Number($("solved").textContent) + 1;
     setLevel(r.level, r.level_name, r.streak);
     if (r.result === "correct") {

@@ -58,7 +58,25 @@ CREATE TABLE IF NOT EXISTS active(
     user_id INTEGER, slot TEXT, data TEXT,
     PRIMARY KEY(user_id, slot)
 );
+CREATE TABLE IF NOT EXISTS achievements(
+    user_id INTEGER, code TEXT, ts TEXT,
+    PRIMARY KEY(user_id, code)
+);
 """
+
+# Новые колонки, которые появились во 2-й версии (добавляются в старую базу без потери данных)
+NEW_COLUMNS = {
+    "users": {
+        "pin_hash": "TEXT",                       # PIN хранится только в виде хеша
+        "fail_count": "INTEGER NOT NULL DEFAULT 0",  # неверных PIN подряд
+        "locked_until": "TEXT",                   # до какого времени вход заблокирован
+        "best_streak": "INTEGER NOT NULL DEFAULT 0",
+    },
+    "attempts": {
+        "solved": "INTEGER",                      # задача в итоге решена (с 1-й или 2-й попытки)
+    },
+}
+SCHEMA_VERSION = 2
 
 
 def now() -> str:
@@ -80,8 +98,30 @@ def close(_exc=None):
 
 
 def init(path: str):
+    """Создаёт таблицы и обновляет старую базу до новой версии (миграция)."""
     with sqlite3.connect(path) as conn:
         conn.executescript(SCHEMA)
+        for table, cols in NEW_COLUMNS.items():
+            have = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+            for col, decl in cols.items():
+                if col not in have:
+                    conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        if version < 2:
+            # тестовый профиль «Демо», созданный при разработке, больше не нужен
+            row = conn.execute("SELECT id FROM users WHERE name = 'Демо' AND pin_hash IS NULL").fetchone()
+            if row:
+                _delete_user(conn, row[0])
+            conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+
+USER_TABLES = ["steps_done", "trainer_done", "attempts", "tests", "topic_state", "active", "achievements"]
+
+
+def _delete_user(conn, user_id):
+    for t in USER_TABLES:
+        conn.execute(f"DELETE FROM {t} WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
 
 
 def query(sql, args=(), one=False):
@@ -99,18 +139,33 @@ def execute(sql, args=()):
 # ---------- ученики ----------
 
 def find_user(name):
-    return query("SELECT * FROM users WHERE name = ?", (name,), one=True)
+    """Поиск по логину без учёта регистра — и для латиницы, и для русских букв.
+
+    (Встроенное в SQLite сравнение NOCASE понимает только латиницу, поэтому сравниваем в Python.)
+    """
+    key = (name or "").strip().casefold()
+    if not key:
+        return None
+    for row in query("SELECT * FROM users"):
+        if row["name"].casefold() == key:
+            return row
+    return None
 
 
 def user_by_id(user_id):
     return query("SELECT * FROM users WHERE id = ?", (user_id,), one=True)
 
 
-def create_user(name, avatar):
+def create_user(name, avatar, pin_hash=None):
     return execute(
-        "INSERT INTO users(name, avatar, created, last_seen) VALUES(?, ?, ?, ?)",
-        (name, avatar, now(), now()),
+        "INSERT INTO users(name, avatar, created, last_seen, pin_hash) VALUES(?, ?, ?, ?, ?)",
+        (name, avatar, now(), now(), pin_hash),
     )
+
+
+def update_user(user_id, **fields):
+    cols = ", ".join(f"{k} = ?" for k in fields)
+    execute(f"UPDATE users SET {cols} WHERE id = ?", (*fields.values(), user_id))
 
 
 def touch_user(user_id):

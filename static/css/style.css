@@ -209,6 +209,47 @@ input[type=range] { accent-color: var(--ac); }
 .stat .v { font-size: 1.1rem; font-weight: 600; }
 .codeview { font-family: var(--mono); font-size: .8rem; line-height: 1.5; white-space: pre; color: var(--acs); max-height: 260px; overflow: auto; }
 
+/* ---------- шапка: серия, кабинет, «Выйти» ---------- */
+.streak { font-weight: 700; color: var(--wr); background: var(--wrb); border-radius: var(--r); padding: 4px 10px; }
+.me { display: inline-flex; align-items: center; gap: 8px; color: var(--tx); padding: 2px 8px 2px 2px; border-radius: var(--r); }
+.me:hover { background: var(--card); text-decoration: none; }
+.logout-btn { font-weight: 700; padding: 9px 18px; font-size: 1rem; border-color: var(--err); color: var(--err); background: var(--errb); }
+.logout-btn:hover { border-color: var(--err); filter: brightness(1.1); }
+@media (max-width: 600px) { .me-name { display: none; } .topbar .t-dark, .topbar .t-light { font-size: 0; } .topbar .t-dark .icon, .topbar .t-light .icon { font-size: 1rem; } }
+
+/* ---------- цифровая клавиатура PIN ---------- */
+.pinpad { padding: 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card-2); width: max-content; max-width: 100%; }
+.pinpad.active { border-color: var(--ac); }
+.pin-label { margin-bottom: 8px; max-width: 220px; }
+.pin-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 10px; }
+.pin-dots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--mut); transition: background .1s, border-color .1s; }
+.pin-dots i.on { background: var(--ac); border-color: var(--ac); }
+.pin-keys { display: grid; grid-template-columns: repeat(3, 56px); gap: 8px; justify-content: center; }
+.pin-key { height: 48px; border-radius: var(--r); border: 1px solid var(--line); background: var(--card); color: var(--tx); font: inherit; font-size: 1.25rem; font-weight: 600; cursor: pointer; }
+.pin-key:hover { border-color: var(--ac); }
+.pin-key:active { transform: scale(.95); background: var(--acb); }
+.pin-del, .pin-clear { color: var(--mut); font-size: 1.05rem; }
+
+/* ---------- карточка входа «Сфотографируй меня» ---------- */
+.login-card { background-color: var(--card); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 16px 16px; border: 2px dashed var(--ac); border-radius: 14px; padding: 20px 24px; }
+.lc-head { display: flex; justify-content: space-between; align-items: center; }
+.lc-avatar { font-size: 4rem; text-align: center; margin: 8px 0; }
+.lc-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-top: 1px dashed var(--line); font-size: 1.1rem; }
+.lc-row b { font-size: 1.6rem; color: var(--acs); }
+.lc-row .lc-pin { font-size: 2.4rem; letter-spacing: .3em; }
+
+/* ---------- кабинет ---------- */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.badge-card { display: flex; gap: 10px; align-items: center; background: var(--card-2); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; }
+.b-icon { font-size: 1.9rem; }
+
+/* ---------- всплывающие сообщения ---------- */
+.toasts { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; pointer-events: none; width: min(420px, 92vw); }
+.toast { display: flex; gap: 12px; align-items: center; background: var(--card); border: 1px solid var(--wr); border-radius: 12px; padding: 12px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); opacity: 0; transform: translateY(20px); transition: opacity .3s, transform .3s; }
+.toast.in { opacity: 1; transform: none; }
+.toast-icon { font-size: 2rem; }
+
 /* классы для SVG-иллюстраций (подстраиваются под тему) */
 .s-ac { fill: var(--ac); }
 .s-ac-tx { fill: var(--acs); }

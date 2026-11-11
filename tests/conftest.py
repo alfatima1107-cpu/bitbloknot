@@ -7,6 +7,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import create_app  # noqa: E402
 
+LOGIN, PIN = "Тест_ученик", "2468"
+
 
 @pytest.fixture
 def app(tmp_path):
@@ -20,5 +22,5 @@ def client(app):
 
 @pytest.fixture
 def logged(client):
-    client.post("/login", data={"name": "Тестовый ученик", "avatar": "🤖"})
+    client.post("/register", data={"login": LOGIN, "pin": PIN, "pin2": PIN, "avatar": "🤖"})
     return client

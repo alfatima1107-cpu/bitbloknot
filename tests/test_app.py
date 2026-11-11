@@ -7,16 +7,20 @@ def test_login_required(client):
     assert r.status_code == 302 and "/login" in r.headers["Location"]
 
 
-def test_login_validation(client):
-    r = client.post("/login", data={"name": "   ", "avatar": "🤖"})
-    assert "Напиши своё имя".encode() in r.data
-
-
 def test_login_and_home(logged):
     r = logged.get("/")
     assert r.status_code == 200
     assert "Сегодня репетитор советует".encode() in r.data
-    assert "Тестовый ученик".encode() in r.data
+    assert "Тест_ученик".encode() in r.data
+
+
+def test_logout_button_everywhere(logged):
+    pages = ["/", "/profile", "/topic/8", "/topic/8?stage=trainer", "/topic/8?stage=tasks",
+             "/topic/8?stage=test", "/review/8"]
+    for url in pages:
+        r = logged.get(url)
+        assert r.status_code == 200, url
+        assert 'class="btn logout-btn"'.encode() in r.data and "Выйти".encode() in r.data, url
 
 
 def test_all_topic_pages_open(logged):
@@ -46,7 +50,7 @@ def test_test_flow(logged, app):
     logged.get("/topic/8?stage=test")
     from tutor import db
     with app.test_request_context():
-        uid = db.find_user("Тестовый ученик")["id"]
+        uid = db.find_user("Тест_ученик")["id"]
         questions = db.load_active(uid, "test:8")["questions"]
     answers = {str(q["id"]): str(q["answer"]) for q in questions}
     r = logged.post("/topic/8/test", data=answers)
