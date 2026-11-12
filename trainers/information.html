@@ -1,0 +1,79 @@
+<div class="seg" id="in-tabs" style="margin-bottom:12px">
+  <button type="button" data-r="0" class="on">По форме</button>
+  <button type="button" data-r="1">По процессу</button>
+</div>
+<div class="flow small" style="margin-bottom:10px" id="in-prog"></div>
+<p class="muted small" id="in-hint"></p>
+<div class="stage">
+  <div class="flow" id="in-cards" style="gap:6px;min-height:46px"></div>
+  <div class="in-bins" id="in-bins"></div>
+</div>
+<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="in-check">Проверить</button><button class="btn" type="button" id="in-new">Новые карточки</button></div>
+<div class="feedback hidden" id="in-fb"></div>
+<style>
+  .in-bins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .in-bin { --c: var(--ac); border: 2px dashed color-mix(in srgb, var(--c) 60%, transparent); border-radius: 12px; padding: 8px; min-height: 120px; cursor: pointer;
+    background: color-mix(in srgb, var(--c) 8%, transparent); transition: background .2s; }
+  .in-bin:hover { background: color-mix(in srgb, var(--c) 16%, transparent); }
+  .in-bin h4 { margin: 0 0 6px; text-align: center; font-size: .9rem; color: color-mix(in srgb, var(--c) 85%, var(--tx)); }
+  .in-bin .tile { width: 100%; margin-bottom: 4px; font-size: .8rem; padding: 4px 6px; }
+  @media (max-width: 560px) { .in-bins { grid-template-columns: repeat(2, 1fr); } }
+</style>
+<script>
+// Сортировщик: разложи карточки по корзинам — по форме представления, потом по информационному процессу.
+const $ = id => document.getElementById(id);
+const ROUNDS = [
+  { hint: "В какой форме представлена информация?", bins: [["текст", "file"], ["числа", "list-check"], ["графика", "camera"], ["звук", "volume"]],
+    cards: [["Книга", 0], ["Письмо", 0], ["SMS от мамы", 0], ["Таблица умножения", 1], ["Расписание поездов", 1], ["Термометр: 36,6", 1], ["Карта города", 2], ["Фотография", 2], ["Схема метро", 2], ["Песня", 3], ["Гудок поезда", 3], ["Голосовое сообщение", 3]] },
+  { hint: "Какой информационный процесс происходит?", bins: [["сбор", "search"], ["хранение", "save"], ["обработка", "gear"], ["передача", "mail"]],
+    cards: [["Измерить рост", 0], ["Спросить дорогу", 0], ["Провести опрос", 0], ["Записать в дневник", 1], ["Сохранить файл", 1], ["Выучить правило", 1], ["Решить задачу", 2], ["Перевести текст", 2], ["Сложить числа", 2], ["Позвонить другу", 3], ["Отправить письмо", 3], ["Выступить с докладом", 3]] },
+];
+const solved = [false, false];
+let r = 0, picked = null, placed = {}, cards = [];
+function prog() {
+  $("in-prog").innerHTML = ["По форме", "По процессу"].map((n, i) => `<span class="chip" style="--c: var(${solved[i] ? "--ok" : "--mut"})">${solved[i] ? BB.icon("check") : ""} ${n}</span>`).join("");
+  if (solved[0] && solved[1]) BB.trainerDone();
+}
+function deal() {
+  const R = ROUNDS[r];
+  cards = R.cards.map((c, i) => [...c, i]).sort(() => Math.random() - 0.5).slice(0, 8);
+  placed = {}; picked = null;
+  $("in-hint").textContent = R.hint + " Нажми на карточку, потом на корзину. Ошибёшься — исправишь после проверки.";
+  $("in-bins").innerHTML = R.bins.map((b, j) => `<div class="in-bin" style="--c: var(--c${[1, 4, 6, 2][j]})" data-b="${j}"><h4>${BB.icon(b[1])} ${b[0]}</h4><div></div></div>`).join("");
+  render();
+  $("in-fb").className = "feedback hidden";
+}
+function render() {
+  $("in-cards").innerHTML = cards.filter(c => placed[c[2]] === undefined).map(c => `<button type="button" class="tile pop ${picked === c[2] ? "picked" : ""}" style="--c: var(--c3)" data-c="${c[2]}">${c[0]}</button>`).join("") ||
+    `<span class="small muted">Все карточки разложены — нажми «Проверить»</span>`;
+  $("in-bins").querySelectorAll(".in-bin").forEach(bin => {
+    const j = +bin.dataset.b;
+    bin.querySelector("div").innerHTML = cards.filter(c => placed[c[2]] === j).map(c => `<button type="button" class="tile ${picked === c[2] ? "picked" : ""}" style="--c: var(--c3)" data-c="${c[2]}">${c[0]}</button>`).join("");
+  });
+}
+document.querySelector("#in-cards").closest(".stage").addEventListener("click", e => {
+  const card = e.target.closest("[data-c]");
+  if (card) { const id = +card.dataset.c; picked = picked === id ? null : id; render(); e.stopPropagation(); return; }
+  const bin = e.target.closest(".in-bin");
+  if (bin && picked !== null) { placed[picked] = +bin.dataset.b; picked = null; render(); }
+});
+$("in-check").onclick = () => {
+  const left = cards.filter(c => placed[c[2]] === undefined).length;
+  if (left) { BB.feedback($("in-fb"), "warn", `Разложи ещё ${left} карточ${left === 1 ? "ку" : left < 5 ? "ки" : "ек"}.`); return; }
+  const wrong = cards.filter(c => placed[c[2]] !== c[1]);
+  render();
+  wrong.forEach(c => $("in-bins").querySelector(`[data-c="${c[2]}"]`).style.setProperty("--c", "var(--err)"));
+  cards.filter(c => placed[c[2]] === c[1]).forEach(c => $("in-bins").querySelector(`[data-c="${c[2]}"]`).style.setProperty("--c", "var(--ok)"));
+  if (!wrong.length) {
+    solved[r] = true; prog();
+    BB.feedback($("in-fb"), "ok", `<div class="fh">Всё верно!</div>${solved[0] && solved[1] ? "Оба раунда пройдены." : "Переключись на второй раунд вверху."}`);
+  } else BB.feedback($("in-fb"), "bad", `Ошибок: ${wrong.length} (красные). Нажми на красную карточку и переложи её в другую корзину.`);
+};
+$("in-new").onclick = deal;
+$("in-tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  $("in-tabs").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  r = +b.dataset.r; deal();
+});
+deal(); prog();
+</script>

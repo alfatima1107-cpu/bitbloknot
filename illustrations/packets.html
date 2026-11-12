@@ -1,0 +1,88 @@
+<div class="widget">
+  <div class="stage"><svg id="pk-svg" viewBox="0 0 640 300" role="img" aria-label="Схема сети с маршрутизаторами"></svg></div>
+  <div class="controls">
+    <button class="btn primary small" type="button" id="pk-send">Отправить «ПРИВЕТ»</button>
+    <button class="btn small" type="button" id="pk-break">Оборвать линию</button>
+  </div>
+  <div id="pk-text" class="readout">Нажми на линию между маршрутизаторами, чтобы её оборвать, или просто отправь сообщение</div>
+</div>
+<script>
+// Сообщение режется на пакеты, каждый идёт своим путём через маршрутизаторы, а у получателя собирается по номерам.
+const WORD = "ПРИВЕТ";
+const P = [[50, 130], [180, 60], [180, 200], [320, 40], [320, 130], [320, 220], [460, 80], [460, 190], [590, 130]];
+const E = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 4], [2, 5], [3, 6], [4, 6], [4, 7], [5, 7], [6, 8], [7, 8], [3, 4], [4, 5]];
+const svg = document.getElementById("pk-svg"), text = document.getElementById("pk-text");
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent = svg) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+const broken = new Set();
+const lines = E.map(([a, b], i) => {
+  const l = el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], stroke: "var(--line)", "stroke-width": 5, "stroke-linecap": "round", style: "cursor:pointer;transition:stroke .2s" });
+  l.addEventListener("click", () => toggle(i));
+  return l;
+});
+function toggle(i) {
+  const [a, b] = E[i];
+  if (a === 0 || b === 8) { text.textContent = "Эту линию не рвём: тогда отправитель или получатель останется без связи"; return; }
+  broken.has(i) ? broken.delete(i) : broken.add(i);
+  lines[i].setAttribute("stroke", broken.has(i) ? "var(--err)" : "var(--line)");
+  lines[i].setAttribute("stroke-dasharray", broken.has(i) ? "6 8" : "");
+  text.textContent = broken.size ? `Оборвано линий: ${broken.size}. Пакеты пойдут в обход` : "Все линии работают";
+}
+P.forEach(([x, y], i) => {
+  const end = i === 0 || i === 8;
+  const g = el("g", { transform: `translate(${x} ${y})` });
+  if (end) {
+    el("rect", { x: -34, y: -24, width: 68, height: 48, rx: 10, fill: `color-mix(in srgb, var(${i ? "--c2" : "--c1"}) 25%, var(--card))`, stroke: `var(${i ? "--c2" : "--c1"})`, "stroke-width": 3 }, g);
+    el("text", { y: 46, "text-anchor": "middle", "font-size": 14, "font-weight": 700 }, g).textContent = i ? "Получатель" : "Отправитель";
+  } else {
+    el("circle", { r: 18, fill: "color-mix(in srgb, var(--c6) 25%, var(--card))", stroke: "var(--c6)", "stroke-width": 3 }, g);
+    el("path", { d: "M-8 0h16M0 -8v16", stroke: "var(--c6)", "stroke-width": 3, "stroke-linecap": "round" }, g);
+  }
+});
+el("text", { x: 320, y: 296, "text-anchor": "middle", "font-size": 13, fill: "var(--mut)" }).textContent = "маршрутизаторы передают пакеты дальше";
+const layer = el("g", {});
+function paths() {
+  const out = [];
+  (function go(v, path) {
+    if (v === 8) { out.push(path); return; }
+    E.forEach(([a, b], i) => {
+      if (broken.has(i)) return;
+      const w = a === v ? b : b === v ? a : -1;
+      if (w >= 0 && !path.includes(w) && P[w][0] >= P[v][0]) go(w, [...path, w]);
+    });
+  })(0, [0]);
+  return out;
+}
+const move = (g, from, to, ms) => new Promise(res => {
+  const t0 = performance.now();
+  (function f(now) {
+    const k = Math.min(1, (now - t0) / ms), e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+    g.setAttribute("transform", `translate(${from[0] + (to[0] - from[0]) * e} ${from[1] + (to[1] - from[1]) * e})`);
+    if (k < 1 && g.isConnected) requestAnimationFrame(f); else res();
+  })(t0);
+});
+let busy = false;
+document.getElementById("pk-break").onclick = () => toggle([3, 4, 7, 8, 12, 13][Math.floor(Math.random() * 6)]);
+document.getElementById("pk-send").onclick = async () => {
+  if (busy) return; busy = true;
+  layer.innerHTML = "";
+  const all = paths();
+  if (!all.length) { text.textContent = "Пути нет! Почини линии, нажав на красные."; busy = false; return; }
+  const arrived = [];
+  text.textContent = "Пакеты в пути…";
+  await Promise.all(WORD.split("").map(async (ch, i) => {
+    const g = el("g", {}, layer);
+    el("rect", { x: -17, y: -13, width: 34, height: 26, rx: 6, fill: `var(--c${(i % 6) + 1})` }, g);
+    el("text", { y: 5, "text-anchor": "middle", "font-size": 13, "font-weight": 700, style: "fill: var(--on-c)" }, g).textContent = `${i + 1}${ch}`;
+    const route = all[Math.floor(Math.random() * all.length)];
+    let at = P[0];
+    g.setAttribute("transform", `translate(${at[0]} ${at[1]})`);
+    await new Promise(r => setTimeout(r, i * 220));
+    for (const v of route.slice(1)) { await move(g, at, P[v], 330 + Math.random() * 320); at = P[v]; }
+    arrived.push(i);
+    await move(g, at, [220 + i * 40, 262], 450);   // встаёт в строку по своему номеру
+  }));
+  text.textContent = `Пакеты пришли в порядке ${arrived.map(n => n + 1).join(", ")} — получатель собрал их по номерам: «${WORD}»`;
+  busy = false;
+};
+</script>

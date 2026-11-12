@@ -1,0 +1,48 @@
+<div class="widget">
+  <div class="stage pb-tree" id="pb-tree"></div>
+  <div class="flow" id="pb-path" style="gap:2px;min-height:40px;margin-top:4px"></div>
+  <div class="small muted hint">Нажми на файл или папку: путь соберётся от диска через все папки по порядку.</div>
+</div>
+<style>
+  .pb-tree ul { list-style: none; margin: 0; padding-left: 22px; border-left: 2px solid var(--line); }
+  .pb-tree > ul { border-left: 0; padding-left: 0; }
+  .pb-tree li { margin: 4px 0; position: relative; }
+  .pb-tree ul ul > li::before { content: ""; position: absolute; left: -22px; top: 18px; width: 18px; border-top: 2px solid var(--line); }
+  .pb-tree li.lit::before, .pb-tree ul.lit { border-color: var(--ac) !important; }
+  .pb-tree .tile { padding: 4px 10px; }
+  .pb-sep { font-family: var(--mono); font-weight: 700; color: var(--mut); padding: 0 2px; }
+</style>
+<script>
+// Дерево папок: нажми на файл — загорится дорожка от диска, а внизу соберётся полный путь.
+const TREE = ["D:", "drive", 1, [
+  ["Школа", "folder", 3, [
+    ["Информатика", "folder", 2, [["доклад.docx", "file", 1], ["таблица.xlsx", "file", 2]]],
+    ["Литература", "folder", 5, [["стихи.txt", "file", 4]]],
+  ]],
+  ["Игры", "folder", 6, [["шахматы.exe", "file", 6]]],
+]];
+const root = document.getElementById("pb-tree"), pathBox = document.getElementById("pb-path");
+let id = 0; const nodes = [];
+function html(n, parent) {
+  const me = { name: n[0], parent, id: id++, dir: !!n[3] };
+  nodes.push(me);
+  return `<li data-id="${me.id}"><button type="button" class="tile" style="--c: var(--c${n[2]})" data-id="${me.id}">${BB.icon(n[1])} ${n[0]}</button>` +
+    (n[3] ? `<ul>${n[3].map(c => html(c, me)).join("")}</ul>` : "") + "</li>";
+}
+root.innerHTML = `<ul>${html(TREE, null)}</ul>`;
+root.addEventListener("click", e => {
+  const b = e.target.closest(".tile"); if (!b) return;
+  const n = nodes[+b.dataset.id];
+  const chain = []; for (let p = n; p; p = p.parent) chain.unshift(p);
+  root.querySelectorAll(".lit").forEach(x => x.classList.remove("lit"));
+  root.querySelectorAll(".tile").forEach(x => x.classList.remove("on"));
+  chain.forEach(p => {
+    const li = root.querySelector(`li[data-id="${p.id}"]`);
+    li.classList.add("lit");
+    if (p.parent) li.parentElement.classList.add("lit");
+    li.querySelector(":scope > .tile").classList.add("on");
+  });
+  pathBox.innerHTML = chain.map((p, i) => `${i ? `<span class="pb-sep pop" style="animation-delay:${i * 0.12}s">\\</span>` : ""}<span class="chip pop mono" style="--c: var(--c${(i % 6) + 1}); animation-delay:${i * 0.12}s">${p.name}</span>`).join("") +
+    (n.dir ? '<span class="pb-sep">\\</span>' : "");
+});
+</script>

@@ -1,0 +1,54 @@
+<div class="widget">
+  <div class="stage"><div class="tr-view" id="tr-view"></div></div>
+  <div class="controls">
+    <div class="row small muted" style="gap:6px;justify-content:center">Переход <div class="seg" id="tr-tr">
+      <button type="button" data-v="none">нет</button><button type="button" data-v="fade" class="on">выцветание</button><button type="button" data-v="push">сдвиг</button><button type="button" data-v="zoom">масштаб</button><button type="button" data-v="flip">переворот</button>
+    </div></div>
+    <div class="row small muted" style="gap:6px;justify-content:center">Анимация картинки <div class="seg" id="tr-an">
+      <button type="button" data-v="none">нет</button><button type="button" data-v="appear" class="on">появление</button><button type="button" data-v="fly">вылет</button><button type="button" data-v="spin">вращение</button>
+    </div></div>
+  </div>
+  <div class="controls"><button class="btn primary small" type="button" id="tr-next">Следующий слайд</button></div>
+  <div id="tr-text" class="readout"></div>
+</div>
+<style>
+  .tr-view { position: relative; width: 100%; max-width: 440px; aspect-ratio: 16 / 9; margin: 0 auto; perspective: 900px; }
+  .tr-s { position: absolute; inset: 0; border-radius: 10px; padding: 14px 18px; color: #fff; box-shadow: 0 6px 20px rgb(0 0 0 / .25); display: flex; flex-direction: column; }
+  .tr-s h4 { margin: 0; font-size: 1.15rem; }
+  .tr-s .pic { margin: auto; width: 34%; aspect-ratio: 1; border-radius: 50%; background: rgb(255 255 255 / .85); display: grid; place-items: center; color: #334155; }
+  .tr-s .pic .icon { width: 44%; height: 44%; }
+  .tr-in-fade { animation: trFade .6s both; } .tr-in-push { animation: trPush .6s both; } .tr-in-zoom { animation: trZoom .6s both; } .tr-in-flip { animation: trFlip .7s both; }
+  .an-appear { animation: trFade .5s .6s both; } .an-fly { animation: trFly .7s .6s both; } .an-spin { animation: trSpin .9s .6s both; }
+  @keyframes trFade { from { opacity: 0; } }
+  @keyframes trPush { from { transform: translateX(100%); } }
+  @keyframes trZoom { from { transform: scale(.2); opacity: 0; } }
+  @keyframes trFlip { from { transform: rotateY(90deg); } }
+  @keyframes trFly { from { transform: translateY(-160%); opacity: 0; } }
+  @keyframes trSpin { from { transform: rotate(-360deg) scale(0); } }
+</style>
+<script>
+// Переход — как один слайд сменяет другой. Анимация — как появляется объект на слайде. Попробуй разные и сравни.
+const SLIDES = [["Моя презентация", "star", "#3b82f6"], ["Устройства компьютера", "monitor", "#8b5cf6"], ["Как хранить файлы", "folder", "#ec4899"], ["Безопасность в сети", "lock", "#f97316"], ["Спасибо за внимание!", "trophy", "#16a34a"]];
+const view = document.getElementById("tr-view");
+const val = id => document.querySelector(`#${id} button.on`).dataset.v;
+let cur = 0;
+function show(first) {
+  const s = SLIDES[cur], tr = val("tr-tr"), an = val("tr-an");
+  const el = document.createElement("div");
+  el.className = "tr-s" + (first || tr === "none" ? "" : ` tr-in-${tr}`);
+  el.style.background = `linear-gradient(135deg, ${s[2]}, color-mix(in srgb, ${s[2]} 60%, #000))`;
+  el.innerHTML = `<h4>${s[0]}</h4><div class="pic ${an === "none" ? "" : "an-" + an}">${BB.icon(s[1])}</div><div style="font-size:.75rem;opacity:.8">слайд ${cur + 1} из ${SLIDES.length}</div>`;
+  view.appendChild(el);
+  setTimeout(() => { [...view.children].slice(0, -1).forEach(c => c.remove()); }, 800);
+  const T = { none: "без перехода", fade: "выцветание", push: "сдвиг", zoom: "масштаб", flip: "переворот" };
+  const AN = { none: "без анимации", appear: "появление", fly: "вылет", spin: "вращение" };
+  document.getElementById("tr-text").textContent = `Переход: ${T[tr]} (между слайдами). Анимация: ${AN[an]} (картинки на слайде). Не перестарайся — эффекты не должны мешать слушать.`;
+}
+["tr-tr", "tr-an"].forEach(id => document.getElementById(id).addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle("on", x === b));
+  show(false);
+}));
+document.getElementById("tr-next").onclick = () => { cur = (cur + 1) % SLIDES.length; show(false); };
+show(true);
+</script>

@@ -1,0 +1,68 @@
+<div class="widget">
+  <div id="bl-scene"></div>
+  <div class="controls">
+    <button class="btn small" type="button" id="bl-reset">Погасить все</button>
+    <button class="btn primary small" type="button" id="bl-task">Задание: собери число</button>
+  </div>
+  <div id="bl-text" class="readout"></div>
+  <div id="bl-task-text" class="small muted hint">Нажимай на лампочки: горит — 1, не горит — 0.</div>
+</div>
+<script>
+// Восемь лампочек — восемь бит. Под каждой — вес разряда. Включи нужные, чтобы собрать число.
+const W = [128, 64, 32, 16, 8, 4, 2, 1];
+const text = document.getElementById("bl-text"), taskText = document.getElementById("bl-task-text");
+let bits = [0, 0, 0, 0, 1, 1, 0, 1], target = null;
+function report() {
+  const n = bits.reduce((s, b, i) => s + b * W[i], 0);
+  const parts = W.filter((w, i) => bits[i]);
+  text.textContent = `${bits.join("")}₂ = ${parts.length ? parts.join(" + ") : "0"} = ${n}`;
+  if (target !== null) {
+    if (n === target) { taskText.textContent = `Получилось! ${target} = ${bits.join("")}₂. Нажми «Задание», чтобы получить новое.`; target = null; }
+    else taskText.textContent = `Собери число ${target}. Сейчас ${n}.`;
+  }
+  return n;
+}
+BB.three(document.getElementById("bl-scene"), { height: 250, camera: [0, 1.5, 13], target: [0, 0.3, 0], fit: [13, 4.2], fov: 34 }).then(k => {
+  const lamps = [];
+  if (k) {
+    const { THREE, scene } = k;
+    W.forEach((w, i) => {
+      const g = new THREE.Group();
+      const glass = new THREE.Mesh(new THREE.SphereGeometry(0.55, 28, 20), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.2, transparent: true, opacity: 0.85 }));
+      glass.position.y = 0.8; g.add(glass);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.5, 20), k.mat("mut", { metalness: 0.5, roughness: 0.4 }));
+      base.position.y = 0.1; g.add(base);
+      const coil = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 8, 20), new THREE.MeshBasicMaterial({ color: 0x444444 }));
+      coil.position.y = 0.8; g.add(coil);
+      const light = new THREE.PointLight(0xffd27a, 0, 3); light.position.y = 0.8; g.add(light);
+      const bit = k.label("0", { size: 0.5, bold: true, mono: true }); bit.position.set(0, -0.5, 0.3); g.add(bit);
+      const wl = k.label(String(w), { size: 0.36, color: "mut", mono: true }); wl.position.set(0, -1.05, 0.3); g.add(wl);
+      g.position.set((i - 3.5) * 1.5, 0, 0);
+      g.userData.pick = { i };
+      const hit = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.6, 1.2), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.3; g.add(hit);
+      scene.add(g);
+      lamps.push({ g, glass, coil, light, bit, glow: 0 });
+    });
+    k.onPick(o => { const i = o.userData.pick.i; bits[i] ^= 1; report(); });
+    k.onFrame(dt => {
+      lamps.forEach((l, i) => {
+        l.glow += ((bits[i] ? 1 : 0) - l.glow) * Math.min(1, dt * 10);
+        l.glass.material.color.setRGB(0.53 + 0.47 * l.glow, 0.53 + 0.37 * l.glow, 0.53 - 0.1 * l.glow);
+        l.glass.material.emissive.setRGB(0.9 * l.glow, 0.7 * l.glow, 0.25 * l.glow);
+        l.coil.material.color.setRGB(0.27 + 0.73 * l.glow, 0.27 + 0.6 * l.glow, 0.27);
+        l.light.intensity = 2.5 * l.glow;
+        l.bit.set(String(bits[i]));
+        l.g.position.y = l.glow * 0.15;
+      });
+    });
+  } else {
+    // запасной вариант без WebGL — обычные кнопки
+    const box = document.getElementById("bl-scene");
+    box.insertAdjacentHTML("beforeend", `<div class="row" style="justify-content:center;gap:6px">${W.map((w, i) => `<button class="choice mono" data-i="${i}">${w}</button>`).join("")}</div>`);
+    box.querySelectorAll("[data-i]").forEach(b => b.onclick = () => { bits[+b.dataset.i] ^= 1; b.classList.toggle("picked", !!bits[+b.dataset.i]); report(); });
+  }
+  document.getElementById("bl-reset").onclick = () => { bits = bits.map(() => 0); report(); };
+  document.getElementById("bl-task").onclick = () => { target = 1 + Math.floor(Math.random() * 255); report(); };
+  report();
+});
+</script>

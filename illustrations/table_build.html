@@ -1,0 +1,43 @@
+<div class="widget">
+  <div class="stage" style="overflow-x:auto"><table class="tb-t" id="tb-t"></table></div>
+  <div class="controls">
+    <button class="btn small" type="button" data-a="r+">+ строка</button>
+    <button class="btn small" type="button" data-a="r-">− строка</button>
+    <button class="btn small" type="button" data-a="c+">+ столбец</button>
+    <button class="btn small" type="button" data-a="c-">− столбец</button>
+    <button class="btn small" type="button" data-a="head">шапка таблицы</button>
+  </div>
+  <div id="tb-text" class="readout"></div>
+  <div class="small muted hint">Нажми на ячейку, чтобы узнать её адрес: номер строки и столбца.</div>
+</div>
+<style>
+  .tb-t { border-collapse: collapse; margin: 0 auto; }
+  .tb-t td { --c: var(--c1); width: 64px; height: 38px; border: 2px solid var(--line); text-align: center; font-size: .8rem; cursor: pointer;
+    background: color-mix(in srgb, var(--c) 10%, transparent); transition: background .2s; animation: pop .3s both; }
+  .tb-t td:hover { background: color-mix(in srgb, var(--c) 25%, transparent); }
+  .tb-t td.sel { background: var(--c); color: var(--on-c); font-weight: 700; }
+  .tb-t tr.head td { font-weight: 700; background: color-mix(in srgb, var(--c3) 30%, transparent); }
+</style>
+<script>
+// Конструктор таблицы: строки × столбцы = ячейки. Ячейка — пересечение строки и столбца.
+let R = 3, C = 3, head = false, sel = null;
+const plural = (n, a, b, c) => { const m = n % 100, d = n % 10; return m > 10 && m < 20 ? c : d === 1 ? a : d > 1 && d < 5 ? b : c; };
+const t = document.getElementById("tb-t"), text = document.getElementById("tb-text");
+function draw() {
+  t.innerHTML = Array.from({ length: R }, (_, r) => `<tr class="${head && r === 0 ? "head" : ""}">` +
+    Array.from({ length: C }, (_, c) => `<td style="--c: var(--c${(c % 6) + 1})" data-r="${r}" data-c="${c}" class="${sel && sel[0] === r && sel[1] === c ? "sel" : ""}">${head && r === 0 ? "Столбец " + (c + 1) : ""}</td>`).join("") + "</tr>").join("");
+  text.textContent = `${R} строк${R > 4 ? "" : R > 1 ? "и" : "а"} × ${C} столб${C > 4 ? "цов" : C > 1 ? "ца" : "ец"} = ${R * C} ${plural(R * C, "ячейка", "ячейки", "ячеек")}` + (sel ? ` · выбрана ячейка: строка ${sel[0] + 1}, столбец ${sel[1] + 1}` : "");
+}
+t.closest(".widget").querySelector(".controls").addEventListener("click", e => {
+  const a = e.target.closest("[data-a]")?.dataset.a; if (!a) return;
+  if (a === "r+" && R < 7) R++;
+  if (a === "r-" && R > 1) R--;
+  if (a === "c+" && C < 6) C++;
+  if (a === "c-" && C > 1) C--;
+  if (a === "head") head = !head;
+  if (sel && (sel[0] >= R || sel[1] >= C)) sel = null;
+  draw();
+});
+t.addEventListener("click", e => { const td = e.target.closest("td"); if (!td) return; sel = [+td.dataset.r, +td.dataset.c]; draw(); });
+draw();
+</script>

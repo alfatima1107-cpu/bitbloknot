@@ -1,0 +1,53 @@
+<div class="widget">
+  <div class="stage" style="display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap">
+    <svg viewBox="0 0 220 200" style="width:220px;background:#000;border-radius:12px">
+      <g style="mix-blend-mode:screen;isolation:isolate">
+        <circle id="rg-r" cx="80" cy="80" r="56" fill="#ff0000"/>
+        <circle id="rg-g" cx="140" cy="80" r="56" fill="#00ff00" style="mix-blend-mode:screen"/>
+        <circle id="rg-b" cx="110" cy="130" r="56" fill="#0000ff" style="mix-blend-mode:screen"/>
+      </g>
+    </svg>
+    <div style="text-align:center">
+      <div id="rg-sw" class="pop" style="width:120px;height:90px;border-radius:12px;border:2px solid var(--line);margin:0 auto"></div>
+      <div id="rg-code" class="mono" style="margin-top:6px;font-weight:700"></div>
+      <div id="rg-hex" class="mono small muted"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <label class="small muted"><span style="color:#ef4444">R (красный) = <b id="rg-rv">255</b></span><input id="rg-rr" type="range" min="0" max="255" value="255" style="accent-color:#ef4444"></label>
+    <label class="small muted"><span style="color:#22c55e">G (зелёный) = <b id="rg-gv">255</b></span><input id="rg-gr" type="range" min="0" max="255" value="255" style="accent-color:#22c55e"></label>
+    <label class="small muted"><span style="color:#3b82f6">B (синий) = <b id="rg-bv">0</b></span><input id="rg-br" type="range" min="0" max="255" value="0" style="accent-color:#3b82f6"></label>
+  </div>
+  <div class="controls"><button class="btn small" type="button" id="rg-task">Задание: собери цвет</button><span id="rg-goal"></span></div>
+  <div id="rg-text" class="readout"></div>
+</div>
+<script>
+// Три лампочки экрана: красная, зелёная, синяя. Их свет складывается в любой цвет.
+const NAMES = [[[255, 0, 0], "красный"], [[0, 255, 0], "зелёный"], [[0, 0, 255], "синий"], [[255, 255, 0], "жёлтый"], [[0, 255, 255], "голубой"], [[255, 0, 255], "пурпурный"], [[255, 255, 255], "белый"], [[0, 0, 0], "чёрный"]];
+let goal = null;
+const v = id => +document.getElementById(id).value;
+const hex = n => n.toString(16).padStart(2, "0").toUpperCase();
+function upd() {
+  const r = v("rg-rr"), g = v("rg-gr"), b = v("rg-br");
+  document.getElementById("rg-rv").textContent = r; document.getElementById("rg-gv").textContent = g; document.getElementById("rg-bv").textContent = b;
+  document.getElementById("rg-r").setAttribute("fill-opacity", r / 255);
+  document.getElementById("rg-g").setAttribute("fill-opacity", g / 255);
+  document.getElementById("rg-b").setAttribute("fill-opacity", b / 255);
+  document.getElementById("rg-sw").style.background = `rgb(${r},${g},${b})`;
+  document.getElementById("rg-code").textContent = `RGB(${r}, ${g}, ${b})`;
+  document.getElementById("rg-hex").textContent = `#${hex(r)}${hex(g)}${hex(b)}`;
+  const named = NAMES.find(n => n[0][0] === r && n[0][1] === g && n[0][2] === b);
+  let msg = named ? `Это ${named[1]} цвет` : "Двигай ползунки: свет трёх лампочек складывается";
+  if (goal) {
+    const near = Math.abs(goal[0][0] - r) + Math.abs(goal[0][1] - g) + Math.abs(goal[0][2] - b) < 40;
+    if (near) { msg = `Получилось: ${goal[1]}!`; goal = null; document.getElementById("rg-goal").innerHTML = ""; }
+  }
+  document.getElementById("rg-text").textContent = msg;
+}
+["rg-rr", "rg-gr", "rg-br"].forEach(id => document.getElementById(id).addEventListener("input", upd));
+document.getElementById("rg-task").onclick = () => {
+  goal = NAMES[3 + Math.floor(Math.random() * 5)];
+  document.getElementById("rg-goal").innerHTML = `<span class="chip pop" style="--c: rgb(${goal[0]})">собери: ${goal[1]}</span>`;
+};
+upd();
+</script>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru" data-theme="dark" data-accent="blue">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Просмотр иллюстраций · БитБлокнот</title>
+  <script>try { var d = document.documentElement; d.dataset.theme = localStorage.getItem("bb-theme") || "dark"; d.dataset.accent = localStorage.getItem("bb-accent") || "blue"; } catch (e) {}</script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <!-- Страница для разработчика: показывает любую иллюстрацию или тренажёр без входа в урок.
+       Адрес: tools/preview.html?w=zoom_pixels  или  tools/preview.html?t=network -->
+  <main class="wrap" style="padding-top:16px">
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <select id="pick" style="min-width:220px"></select>
+      <button class="btn small" type="button" id="theme">Тема</button>
+      <button class="btn small" type="button" id="accent">Цвет</button>
+      <span class="small muted" id="info"></span>
+    </div>
+    <div class="card"><div class="illu" id="box"></div><div class="badge ac hidden" id="trainer-badge">задание выполнено</div></div>
+  </main>
+  <script type="module">
+    import { createKit, disposeAll } from "../js/three-kit.js";
+    import { icon, fillIcons } from "../js/ui.js";
+    const WIDGETS = ["io_devices", "cpu_cycle", "path_builder", "file_ext", "packets", "url_parts", "info_process", "signal_noise",
+      "bit_lamps", "alphabet_bits", "unit_scale", "transfer_time", "char_codes", "krakozyabry", "zoom_pixels", "color_depth", "rgb_mixer",
+      "sampling", "sound_size", "paragraph_style", "table_build", "raster_vector", "vector_nodes", "slide_layouts", "transitions"];
+    const TRAINERS = ["computer", "files", "network", "information", "alphabet", "units", "text", "image", "sound", "documents", "graphics", "presentations"];
+    window.BB = {
+      icon: n => icon(n), three: createKit,
+      fmt: x => (Math.round(x * 1000) / 1000).toLocaleString("ru-RU"),
+      feedback(el, cls, html) { el.className = "feedback " + cls; el.innerHTML = html; },
+      trainerDone() { document.getElementById("trainer-badge").classList.remove("hidden"); },
+    };
+    window.BB_TOAST = { badges: () => {} };
+    const sel = document.getElementById("pick");
+    sel.innerHTML = WIDGETS.map(w => `<option value="w=${w}">иллюстрация: ${w}</option>`).join("") +
+      TRAINERS.map(t => `<option value="t=${t}">тренажёр: ${t}</option>`).join("");
+    async function load(q) {
+      disposeAll();
+      const [kind, name] = q.split("=");
+      sel.value = q;
+      history.replaceState(null, "", "?" + q);
+      document.getElementById("trainer-badge").classList.add("hidden");
+      const box = document.getElementById("box");
+      box.className = kind === "w" ? "illu" : "";   // тренажёр в уроке вставляется в обычный блок
+      const r = await fetch(`../${kind === "w" ? "illustrations" : "trainers"}/${name}.html`, { cache: "no-cache" });
+      document.getElementById("info").textContent = r.ok ? "" : "файла пока нет";
+      box.innerHTML = r.ok ? await r.text() : "";
+      fillIcons(box);
+      box.querySelectorAll("script").forEach(old => {
+        const sc = document.createElement("script");
+        sc.textContent = `(function () {\n${old.textContent}\n})();`;
+        old.replaceWith(sc);
+      });
+    }
+    sel.onchange = () => load(sel.value);
+    document.getElementById("theme").onclick = () => { const d = document.documentElement; d.dataset.theme = d.dataset.theme === "dark" ? "light" : "dark"; };
+    const AC = ["blue", "green", "yellow", "red"];
+    document.getElementById("accent").onclick = () => { const d = document.documentElement; d.dataset.accent = AC[(AC.indexOf(d.dataset.accent) + 1) % 4]; };
+    const p = new URLSearchParams(location.search);
+    load(p.get("t") ? "t=" + p.get("t") : "w=" + (p.get("w") || WIDGETS[0]));
+  </script>
+</body>
+</html>

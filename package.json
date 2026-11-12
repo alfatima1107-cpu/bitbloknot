@@ -1,0 +1,9 @@
+{
+  "name": "bitbloknot",
+  "private": true,
+  "type": "module",
+  "description": "БитБлокнот — интерактивный репетитор по информатике для 7 класса",
+  "scripts": {
+    "test": "node --test tests/"
+  }
+}

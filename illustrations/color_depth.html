@@ -1,0 +1,62 @@
+<div class="widget">
+  <div class="stage" style="display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap">
+    <canvas id="cdp-c" width="200" height="200" style="width:200px;height:200px;border-radius:10px;image-rendering:pixelated"></canvas>
+    <div style="min-width:200px;max-width:260px">
+      <div class="small muted">Палитра</div>
+      <div id="cdp-pal" style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <label class="small muted"><span>Глубина цвета i = <b id="cdp-i">3</b> бит</span>
+      <input id="cdp-r" type="range" min="1" max="8" step="1" value="3">
+    </label>
+  </div>
+  <div id="cdp-text" class="readout"></div>
+</div>
+<script>
+// Одна картинка с разной глубиной цвета: чем меньше бит на пиксель, тем меньше цветов в палитре.
+const c = document.getElementById("cdp-c"), x = c.getContext("2d", { willReadFrequently: true });
+const src = document.createElement("canvas"); src.width = src.height = 100;
+const q = src.getContext("2d");
+const g = q.createLinearGradient(0, 0, 100, 100);
+["#3b82f6", "#a855f7", "#ec4899", "#f97316", "#facc15"].forEach((col, i) => g.addColorStop(i / 4, col));
+q.fillStyle = g; q.fillRect(0, 0, 100, 100);
+q.fillStyle = "#22c55e"; q.beginPath(); q.arc(30, 70, 22, 0, 7); q.fill();
+q.fillStyle = "#fef08a"; q.beginPath(); q.arc(72, 30, 16, 0, 7); q.fill();
+q.fillStyle = "#0f172a"; q.fillRect(55, 60, 30, 30);
+const base = q.getImageData(0, 0, 100, 100);
+function palette(n) {
+  // n цветов: выбираем самые частые цвета картинки по грубой сетке
+  const count = new Map();
+  for (let p = 0; p < base.data.length; p += 4) {
+    const key = (base.data[p] >> 4) << 8 | (base.data[p + 1] >> 4) << 4 | (base.data[p + 2] >> 4);
+    count.set(key, (count.get(key) || 0) + 1);
+  }
+  const top = [...count.entries()].sort((a, b) => b[1] - a[1]);
+  const pal = [];
+  for (const [k] of top) {
+    const col = [((k >> 8) & 15) * 17, ((k >> 4) & 15) * 17, (k & 15) * 17];
+    if (pal.every(p => Math.abs(p[0] - col[0]) + Math.abs(p[1] - col[1]) + Math.abs(p[2] - col[2]) > 60 / Math.log2(n + 1))) pal.push(col);
+    if (pal.length >= n) break;
+  }
+  if (n === 2) return [[15, 23, 42], [250, 204, 21]];
+  return pal;
+}
+function draw() {
+  const i = +document.getElementById("cdp-r").value, n = 2 ** i;
+  document.getElementById("cdp-i").textContent = i;
+  const pal = palette(n);
+  const out = x.createImageData(100, 100);
+  for (let p = 0; p < base.data.length; p += 4) {
+    let best = pal[0], bd = 1e9;
+    for (const col of pal) { const d = (col[0] - base.data[p]) ** 2 + (col[1] - base.data[p + 1]) ** 2 + (col[2] - base.data[p + 2]) ** 2; if (d < bd) { bd = d; best = col; } }
+    out.data[p] = best[0]; out.data[p + 1] = best[1]; out.data[p + 2] = best[2]; out.data[p + 3] = 255;
+  }
+  const tmp = document.createElement("canvas"); tmp.width = tmp.height = 100; tmp.getContext("2d").putImageData(out, 0, 0);
+  x.imageSmoothingEnabled = false; x.drawImage(tmp, 0, 0, 200, 200);
+  document.getElementById("cdp-pal").innerHTML = pal.slice(0, 64).map(p => `<i class="pop" style="width:18px;height:18px;border-radius:4px;background:rgb(${p})"></i>`).join("") + (n > 64 ? `<span class="small muted">… всего ${n}</span>` : "");
+  document.getElementById("cdp-text").textContent = `N = 2${"⁰¹²³⁴⁵⁶⁷⁸"[i]} = ${n} цветов · картинка 100 × 100: ${(100 * 100 * i).toLocaleString("ru-RU")} бит = ${(100 * 100 * i / 8).toLocaleString("ru-RU")} байт`;
+}
+document.getElementById("cdp-r").addEventListener("input", draw);
+draw();
+</script>

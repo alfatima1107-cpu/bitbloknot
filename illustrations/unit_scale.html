@@ -1,0 +1,62 @@
+<div class="widget">
+  <div class="stage"><div class="us-stairs" id="us-stairs"><span class="us-ball" id="us-ball"></span></div></div>
+  <div class="controls">
+    <input id="us-val" type="text" inputmode="decimal" value="2" style="width:90px" aria-label="Число">
+    <select id="us-from" aria-label="Из каких единиц"></select>
+    <span class="muted">в</span>
+    <select id="us-to" aria-label="В какие единицы"></select>
+    <button class="btn primary small" type="button" id="us-go">Перевести</button>
+  </div>
+  <div id="us-text" class="readout"></div>
+  <div class="small muted hint">Вверх по лестнице — делим, вниз — умножаем. Между битом и байтом шаг ×8, дальше ×1024.</div>
+</div>
+<style>
+  .us-stairs { position: relative; display: flex; align-items: flex-end; gap: 6px; height: 210px; padding-top: 40px; }
+  .us-step { --c: var(--ac); flex: 1; border-radius: 10px 10px 4px 4px; background: color-mix(in srgb, var(--c) 30%, var(--card)); border: 2px solid var(--c);
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 6px; font-weight: 700; font-size: .9rem; position: relative; }
+  .us-step em { position: absolute; top: -22px; right: -14px; font-style: normal; font-family: var(--mono); font-size: .75rem; color: var(--mut); z-index: 1; }
+  .us-ball { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: var(--tx); box-shadow: 0 3px 10px rgb(0 0 0 / .3);
+    transition: left .28s ease-in-out, bottom .28s cubic-bezier(.3,1.7,.5,1); z-index: 2; }
+  .us-tag { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; z-index: 3; transition: left .28s, bottom .28s; }
+</style>
+<script>
+// Лестница единиц: шарик прыгает по ступенькам и на каждом шаге умножает или делит.
+const U = ["бит", "байт", "Кбайт", "Мбайт", "Гбайт", "Тбайт"];
+const F = [8, 1024, 1024, 1024, 1024];
+const stairs = document.getElementById("us-stairs"), ball = document.getElementById("us-ball");
+const from = document.getElementById("us-from"), to = document.getElementById("us-to"), text = document.getElementById("us-text");
+from.innerHTML = to.innerHTML = U.map((u, i) => `<option value="${i}">${u}</option>`).join("");
+from.value = 2; to.value = 0;
+stairs.insertAdjacentHTML("beforeend", U.map((u, i) => `<div class="us-step" style="--c: var(--c${i + 1}); height:${30 + i * 26}px">${u}${i < 5 ? `<em>×${F[i]}</em>` : ""}</div>`).join(""));
+stairs.insertAdjacentHTML("beforeend", `<span class="chip us-tag mono" id="us-tag"></span>`);
+const tag = document.getElementById("us-tag");
+const fmt = x => (Math.round(x * 1000) / 1000).toLocaleString("ru-RU");
+function place(i, v) {
+  const st = stairs.querySelectorAll(".us-step")[i];
+  const x = st.offsetLeft + st.offsetWidth / 2, top = st.offsetHeight;
+  ball.style.left = (x - 11) + "px"; ball.style.bottom = top + "px";
+  tag.style.left = x + "px"; tag.style.bottom = (top + 52) + "px";
+  tag.textContent = `${fmt(v)} ${U[i]}`;
+}
+let busy = false;
+async function go() {
+  if (busy) return; busy = true;
+  let v = Number(String(document.getElementById("us-val").value).replace(",", ".").replace(/\s/g, ""));
+  if (!isFinite(v)) { text.textContent = "Впиши число"; busy = false; return; }
+  let i = +from.value; const j = +to.value; const steps = [];
+  place(i, v);
+  await new Promise(r => setTimeout(r, 350));
+  while (i !== j) {
+    const up = j > i, f = up ? F[i] : F[i - 1], nv = up ? v / f : v * f;
+    steps.push(`${fmt(v)} ${up ? ":" : "×"} ${f} = ${fmt(nv)}`);
+    v = nv; i += up ? 1 : -1;
+    place(i, v);
+    await new Promise(r => setTimeout(r, 420));
+  }
+  text.textContent = steps.length ? `${steps.join(" → ")} ${U[j]}` : "Единицы одинаковые — переводить не нужно";
+  busy = false;
+}
+document.getElementById("us-go").onclick = go;
+document.getElementById("us-val").addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+requestAnimationFrame(go);
+</script>

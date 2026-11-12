@@ -1,0 +1,40 @@
+<div class="widget">
+  <div class="stage"><div class="ab-grid" id="ab-grid"></div></div>
+  <div class="controls">
+    <label class="small muted"><span>Мощность алфавита N = <b id="ab-n">33</b></span>
+      <input id="ab-range" type="range" min="2" max="256" step="1" value="33">
+    </label>
+    <div class="seg" id="ab-seg">
+      <button type="button" data-n="2">2</button>
+      <button type="button" data-n="10">10 цифр</button>
+      <button type="button" data-n="26">26 латиница</button>
+      <button type="button" data-n="33" class="on">33 русский</button>
+    </div>
+  </div>
+  <div id="ab-text" class="readout"></div>
+  <div class="small muted hint">Каждая клетка — один код из i бит. Цветные клетки заняты символами алфавита, серые — свободны.</div>
+</div>
+<style>
+  .ab-grid { display: grid; gap: 3px; margin: 0 auto; max-width: 420px; }
+  .ab-grid i { aspect-ratio: 1; border-radius: 4px; background: color-mix(in srgb, var(--line) 60%, transparent); transition: background .25s, transform .25s; }
+  .ab-grid i.on { transform: scale(1.04); }
+</style>
+<script>
+// Сколько бит нужно на символ: 2ⁱ клеток-кодов должно хватить на все N символов алфавита.
+const range = document.getElementById("ab-range"), grid = document.getElementById("ab-grid"), text = document.getElementById("ab-text");
+const sup = d => String(d).split("").map(c => "⁰¹²³⁴⁵⁶⁷⁸⁹"[c]).join("");
+function update(n) {
+  n = Math.max(2, Math.min(256, n));
+  const i = Math.ceil(Math.log2(n)), cap = 2 ** i;
+  document.getElementById("ab-n").textContent = n; range.value = n;
+  document.querySelectorAll("#ab-seg button").forEach(b => b.classList.toggle("on", +b.dataset.n === n));
+  const cols = Math.ceil(Math.sqrt(cap));
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.style.maxWidth = Math.min(420, cols * 38) + "px";
+  grid.innerHTML = Array.from({ length: cap }, (_, c) => c < n ? `<i class="on" style="background: var(--c${Math.floor(c / Math.max(1, cap / 6)) % 6 + 1})"></i>` : "<i></i>").join("");
+  text.textContent = n <= 2 ? `N = ${n} → хватает 1 бита: 2¹ = 2` : `N = ${n}: 2${sup(i - 1)} = ${cap / 2} мало, 2${sup(i)} = ${cap} хватает → i = ${i} бит`;
+}
+range.addEventListener("input", () => update(+range.value));
+document.getElementById("ab-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) update(+b.dataset.n); });
+update(33);
+</script>

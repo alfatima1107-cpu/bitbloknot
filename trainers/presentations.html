@@ -1,0 +1,74 @@
+<p class="muted small">На каждом слайде есть ошибки оформления. Найди их щелчком — ошибка исправится, а ты узнаешь правило. Исправь все ошибки на 3 слайдах.</p>
+<div class="flow small" id="ps-prog" style="margin-bottom:8px"></div>
+<div class="stage"><div class="pz-slide" id="pz-slide"></div></div>
+<div class="row" style="margin-top:10px;justify-content:center">
+  <button class="btn" type="button" id="pz-prev">Предыдущий</button>
+  <span class="small muted" id="pz-left"></span>
+  <button class="btn primary" type="button" id="pz-next">Следующий слайд</button>
+</div>
+<div class="feedback hidden" id="pz-fb"></div>
+<style>
+  .pz-slide { position: relative; width: 100%; max-width: 520px; aspect-ratio: 16 / 9; margin: 0 auto; border-radius: 10px; overflow: hidden; box-shadow: 0 6px 20px rgb(0 0 0 / .25); padding: 4% 6%; display: flex; flex-direction: column; gap: 3%; }
+  .pz-el { border-radius: 6px; cursor: pointer; transition: all .35s; outline: 2px dashed transparent; outline-offset: 2px; }
+  .pz-el:hover { outline-color: rgb(127 127 127 / .6); }
+  .pz-el.fixed { outline: 2px solid #22c55e; }
+  .pz-spin { display: inline-block; animation: pzspin 1s linear infinite; }
+  .pz-bounce { display: inline-block; animation: floaty .5s ease-in-out infinite; }
+  @keyframes pzspin { to { transform: rotate(360deg); } }
+</style>
+<script>
+// «Исправь слайд»: каждый элемент слайда — кнопка. Элементы с ошибкой при щелчке исправляются.
+const $ = id => document.getElementById(id);
+const SLIDES = [
+  { bg: "#ffffff", els: [
+    { html: "Кодирование звука", style: "font-size:1.6rem;font-weight:700;color:#1e3a8a", ok: true, why: "Заголовок крупный и контрастный — всё в порядке." },
+    { html: "Звук — это волна. Чтобы записать звук, компьютер много раз в секунду измеряет громкость и сохраняет числа. Чем чаще замеры и чем точнее каждый замер, тем лучше качество, но тем больше объём файла. Объём считается по формуле: частота × разрядность × время × число каналов. Например, для записи в 44,1 кГц, 16 бит, стерео, одна минута весит около 10 Мбайт…",
+      style: "font-size:.62rem;color:#334155", fix: "• Звук — волна<br>• Замеры громкости → числа<br>• V = частота × бит × время × каналы", fixStyle: "font-size:1rem;color:#334155;line-height:1.6",
+      why: "Слишком много текста! На слайде — 3–5 коротких пунктов, подробности рассказывай голосом." },
+  ] },
+  { bg: "#ffffff", els: [
+    { html: "Устройства ввода", style: "font-size:1.5rem;font-weight:700;color:#fde047", fix: "Устройства ввода", fixStyle: "font-size:1.5rem;font-weight:700;color:#713f12", why: "Жёлтый текст на белом почти не виден. Нужен контраст: тёмный текст на светлом фоне." },
+    { html: "клавиатура, мышь, микрофон, сканер, камера", style: "font-size:.55rem;color:#475569", fix: "клавиатура, мышь, микрофон, сканер, камера", fixStyle: "font-size:1.05rem;color:#475569", why: "Шрифт слишком мелкий — с последней парты не прочитать. Не меньше 24 пт." },
+    { html: "Все они передают информацию в компьютер.", style: "font-size:1rem;color:#0f172a", ok: true, why: "Этот текст читается хорошо." },
+  ] },
+  { bg: "linear-gradient(135deg,#1e1b4b,#312e81)", els: [
+    { html: "Наши <span class='pz-spin'>достижения</span>", style: "font-size:1.5rem;font-weight:700;color:#fff", fix: "Наши достижения", fixStyle: "font-size:1.5rem;font-weight:700;color:#fff", why: "Крутящийся заголовок отвлекает. Анимация нужна только там, где помогает понять." },
+    { html: "<span class='pz-bounce'>1 место</span> <span class='pz-spin'>в олимпиаде</span>", style: "font-size:1.1rem;color:#e0e7ff", fix: "1 место в олимпиаде", fixStyle: "font-size:1.1rem;color:#e0e7ff", why: "Прыгающие и вращающиеся слова мешают слушать. Убери лишние эффекты." },
+    { html: "Спасибо команде!", style: "font-size:1rem;color:#c7d2fe", ok: true, why: "Спокойный текст — хорошо." },
+  ] },
+  { bg: "#fef2f2", els: [
+    { html: "<span style='font-family:Georgia'>Сети</span> <span style='font-family:Impact'>и</span> <span style='font-family:Courier New'>интернет</span>", style: "font-size:1.5rem;color:#7f1d1d", fix: "Сети и интернет", fixStyle: "font-size:1.5rem;color:#7f1d1d;font-weight:700", why: "Три разных шрифта в одном заголовке — пестро. Держи единый стиль: 1–2 шрифта на всю презентацию." },
+    { html: "Интернет — это сеть сетей.", style: "font-size:1.1rem;color:#450a0a", ok: true, why: "Коротко и понятно." },
+    { html: "Источник картинки: ?", style: "font-size:.8rem;color:#991b1b", fix: "Фото: wikimedia.org, лицензия CC BY", fixStyle: "font-size:.8rem;color:#991b1b", why: "Если берёшь картинку из интернета, укажи источник — это уважение к автору." },
+  ] },
+];
+const state = SLIDES.map(s => s.els.map(() => false));
+let cur = 0;
+const errorsOn = i => SLIDES[i].els.filter((e, j) => !e.ok && !state[i][j]).length;
+const doneSlides = () => SLIDES.filter((_, i) => errorsOn(i) === 0).length;
+function draw() {
+  const s = SLIDES[cur];
+  $("pz-slide").style.background = s.bg;
+  $("pz-slide").innerHTML = s.els.map((e, j) => {
+    const fixed = state[cur][j];
+    return `<div class="pz-el ${fixed ? "fixed" : ""}" data-j="${j}" style="${fixed ? e.fixStyle : e.style}">${fixed ? e.fix : e.html}</div>`;
+  }).join("");
+  $("pz-left").textContent = `слайд ${cur + 1} из ${SLIDES.length} · ошибок осталось: ${errorsOn(cur)}`;
+  $("ps-prog").innerHTML = SLIDES.map((_, i) => `<span class="chip" style="--c: var(${errorsOn(i) === 0 ? "--ok" : "--mut"})">${errorsOn(i) === 0 ? BB.icon("check") : ""} слайд ${i + 1}</span>`).join("");
+  $("pz-prev").disabled = cur === 0;
+  $("pz-next").disabled = cur === SLIDES.length - 1;
+}
+$("pz-slide").addEventListener("click", e => {
+  const el = e.target.closest(".pz-el"); if (!el) return;
+  const j = +el.dataset.j, it = SLIDES[cur].els[j];
+  if (it.ok) { BB.feedback($("pz-fb"), "warn", it.why); return; }
+  if (state[cur][j]) return;
+  state[cur][j] = true; draw();
+  const total = doneSlides();
+  BB.feedback($("pz-fb"), "ok", `<div class="fh">Ошибка исправлена</div>${it.why}` + (errorsOn(cur) === 0 ? " На этом слайде всё исправлено!" : ""));
+  if (total >= 3) BB.trainerDone();
+});
+$("pz-next").onclick = () => { cur++; draw(); $("pz-fb").className = "feedback hidden"; };
+$("pz-prev").onclick = () => { cur--; draw(); $("pz-fb").className = "feedback hidden"; };
+draw();
+</script>

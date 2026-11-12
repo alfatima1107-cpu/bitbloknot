@@ -1,0 +1,148 @@
+<div class="tabs" id="pc-tabs">
+  <button class="btn small active" data-tab="sort">Собери компьютер</button>
+  <button class="btn small" data-tab="broken">Что сломалось?</button>
+</div>
+
+<div data-cpane="sort">
+  <p class="muted small">Перетащи каждое устройство в нужную корзину (или нажми на карточку, а потом на корзину).</p>
+  <div class="pc-cards" id="pc-cards"></div>
+  <div class="pc-bins" id="pc-bins"></div>
+  <div class="row" style="margin-top:10px"><span class="small muted" id="pc-score"></span><button class="btn small" id="pc-reset"><i data-icon="refresh"></i> Начать заново</button></div>
+  <div class="feedback hidden" id="pc-fb"></div>
+</div>
+
+<div data-cpane="broken" class="hidden">
+  <p class="muted small">Ты — компьютерный мастер. Прочитай, на что жалуется хозяин компьютера, и найди сломавшееся устройство.</p>
+  <div class="card" style="background:var(--card-2)">
+    <div id="br-q" style="font-size:1.05rem"></div>
+    <div class="row" id="br-opts" style="margin-top:10px"></div>
+    <div class="feedback hidden" id="br-fb"></div>
+  </div>
+  <div class="row" style="margin-top:8px"><span class="small muted" id="br-score"></span><button class="btn small hidden" id="br-next">Следующий клиент <i data-icon="arrow-right"></i></button></div>
+</div>
+
+<style>
+  #pc-tabs .btn.active { border-color: var(--ac); color: var(--acs); background: var(--acb); }
+  .pc-cards { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; padding: 8px; border: 1px dashed var(--line); border-radius: 8px; }
+  .pc-card { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--card-2); cursor: grab; user-select: none; font-size: .9rem; }
+  .pc-card.sel { border-color: var(--ac); background: var(--acb); color: var(--acs); }
+  .pc-card.ok { border-color: var(--ok); color: var(--ok); cursor: default; }
+  .pc-bins { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-top: 10px; }
+  .pc-bin { border: 1px solid var(--line); border-radius: 8px; padding: 8px; min-height: 110px; background: var(--card); }
+  .pc-bin.over { border-color: var(--ac); background: var(--acb); }
+  .pc-bin.shake { animation: shake .35s; border-color: var(--err); }
+  .pc-bin h4 { margin: 0 0 6px; font-size: .9rem; }
+  .pc-bin .in { display: flex; flex-wrap: wrap; gap: 4px; }
+  @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+</style>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  document.querySelectorAll("#pc-tabs [data-tab]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#pc-tabs [data-tab]").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll("[data-cpane]").forEach(p => p.classList.toggle("hidden", p.dataset.cpane !== b.dataset.tab));
+  }));
+
+  const BINS = {
+    input: [BB.icon("keyboard") + " Ввод", "передают информацию от человека в компьютер"],
+    output: [BB.icon("monitor") + " Вывод", "показывают информацию человеку"],
+    process: [BB.icon("chip") + " Обработка", "обрабатывают информацию"],
+    storage: [BB.icon("save") + " Хранение", "хранят информацию"],
+  };
+  const DEV = [
+    ["Клавиатура", "input"], ["Мышь", "input"], ["Микрофон", "input"], ["Сканер", "input"], ["Веб-камера", "input"], ["Джойстик", "input"],
+    ["Монитор", "output"], ["Принтер", "output"], ["Колонки", "output"], ["Наушники", "output"], ["Проектор", "output"],
+    ["Процессор", "process"], ["Видеокарта", "process"],
+    ["Жёсткий диск", "storage"], ["SSD", "storage"], ["Флешка", "storage"], ["Оперативная память", "storage"],
+  ];
+  let placed = 0, mistakes = 0, selected = null;
+
+  function build() {
+    placed = 0; mistakes = 0; selected = null;
+    $("pc-fb").className = "feedback hidden";
+    const cards = $("pc-cards"); cards.innerHTML = "";
+    [...DEV].sort(() => Math.random() - 0.5).forEach(([name, bin]) => {
+      const c = document.createElement("div"); c.className = "pc-card"; c.textContent = name; c.draggable = true;
+      c.dataset.bin = bin;
+      c.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", name); selected = c; });
+      c.addEventListener("click", () => { if (c.classList.contains("ok")) return; document.querySelectorAll(".pc-card.sel").forEach(x => x.classList.remove("sel")); c.classList.add("sel"); selected = c; });
+      cards.appendChild(c);
+    });
+    const bins = $("pc-bins"); bins.innerHTML = "";
+    Object.entries(BINS).forEach(([key, [title, desc]]) => {
+      const b = document.createElement("div"); b.className = "pc-bin"; b.dataset.bin = key;
+      b.innerHTML = `<h4>${title}</h4><div class="small muted" style="margin-bottom:6px">${desc}</div><div class="in"></div>`;
+      b.addEventListener("dragover", e => { e.preventDefault(); b.classList.add("over"); });
+      b.addEventListener("dragleave", () => b.classList.remove("over"));
+      b.addEventListener("drop", e => { e.preventDefault(); b.classList.remove("over"); drop(b); });
+      b.addEventListener("click", () => drop(b));
+      bins.appendChild(b);
+    });
+    score();
+  }
+  const WHY = {
+    "Оперативная память": "Оперативная память хранит программы и данные, пока компьютер работает (после выключения она очищается).",
+    "Видеокарта": "Видеокарта обрабатывает изображение — у неё даже есть свой процессор.",
+    "Веб-камера": "Веб-камера передаёт изображение в компьютер — это ввод.",
+    "Наушники": "Наушники выводят звук человеку.",
+  };
+  function drop(bin) {
+    if (!selected || selected.classList.contains("ok")) return;
+    const c = selected; selected = null; c.classList.remove("sel");
+    if (c.dataset.bin === bin.dataset.bin) {
+      c.classList.add("ok"); c.draggable = false; bin.querySelector(".in").appendChild(c); placed++;
+      BB.feedback($("pc-fb"), "ok", `<b>${c.textContent}</b> — верно! ${WHY[c.textContent] || ""}`);
+    } else {
+      mistakes++; bin.classList.remove("shake"); void bin.offsetWidth; bin.classList.add("shake");
+      const right = BINS[c.dataset.bin];
+      BB.feedback($("pc-fb"), "bad", `<b>${c.textContent}</b> сюда не подходит. Подумай: это устройство ${right[1]}?`);
+    }
+    score();
+    if (placed === DEV.length) {
+      BB.feedback($("pc-fb"), "ok", `<div class="fh">Компьютер собран!</div>Ошибок: ${mistakes}. ${mistakes <= 3 ? "Отличный результат!" : "Попробуй ещё раз с меньшим числом ошибок."}`);
+      BB.trainerDone();
+    }
+  }
+  function score() { $("pc-score").textContent = `Разложено: ${placed} из ${DEV.length} · ошибок: ${mistakes}`; }
+  $("pc-reset").addEventListener("click", build);
+  build();
+
+  // ---------- что сломалось ----------
+  const CASES = [
+    ["«Видео идёт, а звука нет совсем!»", "Колонки", ["Колонки", "Монитор", "Процессор", "Клавиатура"], "Звук выводят колонки (или наушники)."],
+    ["«Курсор на экране не двигается, а клавиатура работает»", "Мышь", ["Мышь", "Монитор", "Жёсткий диск", "Принтер"], "Курсором управляет мышь — устройство ввода."],
+    ["«Компьютер гудит, лампочки горят, но на экране ничего нет»", "Монитор", ["Монитор", "Мышь", "Микрофон", "Флешка"], "Изображение показывает монитор."],
+    ["«Друзья в видеочате меня не слышат»", "Микрофон", ["Микрофон", "Колонки", "Монитор", "Принтер"], "Голос в компьютер передаёт микрофон."],
+    ["«Все мои фото и документы пропали после выключения — диск не определяется»", "Жёсткий диск", ["Жёсткий диск", "Оперативная память", "Процессор", "Колонки"], "Файлы надолго хранятся на жёстком диске (или SSD)."],
+    ["«Документ на экране есть, а на бумаге не получается»", "Принтер", ["Принтер", "Сканер", "Монитор", "Мышь"], "На бумагу выводит принтер."],
+    ["«Буквы не печатаются, а мышка работает»", "Клавиатура", ["Клавиатура", "Монитор", "Мышь", "Процессор"], "Текст вводят с клавиатуры."],
+    ["«Меня не видно в видеоуроке, хотя слышно хорошо»", "Веб-камера", ["Веб-камера", "Микрофон", "Монитор", "Колонки"], "Изображение в компьютер передаёт веб-камера."],
+  ];
+  let order = [], k = 0, right = 0;
+  function brShow() {
+    const [q, ans, opts, why] = CASES[order[k]];
+    $("br-q").innerHTML = `Клиент ${k + 1} из 5: ${q}`; $("br-fb").className = "feedback hidden"; $("br-next").classList.add("hidden");
+    $("br-opts").innerHTML = "";
+    [...opts].sort(() => Math.random() - 0.5).forEach(o => {
+      const b = document.createElement("button"); b.className = "choice"; b.textContent = o;
+      b.addEventListener("click", () => {
+        if ($("br-opts").dataset.done) return;
+        $("br-opts").dataset.done = "1";
+        const ok = o === ans; right += ok;
+        b.classList.add(ok ? "right" : "wrong");
+        [...$("br-opts").children].forEach(x => { if (x.textContent === ans) x.classList.add("right"); });
+        BB.feedback($("br-fb"), ok ? "ok" : "bad", (ok ? "Верно! " : `Не то. Сломалось: ${ans}. `) + why);
+        if (k < 4) $("br-next").classList.remove("hidden");
+        else { $("br-score").textContent = `Итог: ${right} из 5`; if (right >= 4) BB.trainerDone(); $("br-next").textContent = "Ещё раз"; $("br-next").classList.remove("hidden"); }
+      });
+      $("br-opts").appendChild(b);
+    });
+    delete $("br-opts").dataset.done;
+    $("br-score").textContent = `Правильно: ${right}`;
+  }
+  function brStart() { order = [...CASES.keys()].sort(() => Math.random() - 0.5).slice(0, 5); k = 0; right = 0; $("br-next").innerHTML = "Следующий клиент →"; brShow(); }
+  $("br-next").addEventListener("click", () => { if (k >= 4) brStart(); else { k++; brShow(); } });
+  brStart();
+})();
+</script>

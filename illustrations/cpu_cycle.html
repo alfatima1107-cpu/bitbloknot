@@ -1,0 +1,55 @@
+<div class="widget">
+  <div class="stage">
+    <div class="flow cc-row" id="cc-row"></div>
+  </div>
+  <div class="controls">
+    <button class="btn small" type="button" id="cc-back">Назад</button>
+    <button class="btn primary small" type="button" id="cc-next">Следующий шаг</button>
+    <button class="btn small" type="button" id="cc-auto">Автоматически</button>
+  </div>
+  <div id="cc-text" class="readout"></div>
+</div>
+<style>
+  .cc-row { gap: 6px; flex-wrap: nowrap; }
+  .cc-box { --c: var(--ac); position: relative; flex: 1 1 0; min-width: 0; max-width: 140px; border-radius: 12px; padding: 12px 6px 10px; text-align: center;
+    border: 2px solid color-mix(in srgb, var(--c) 50%, transparent); background: color-mix(in srgb, var(--c) 10%, var(--card)); transition: transform .3s, box-shadow .3s, background .3s; }
+  .cc-box .icon { width: 34px; height: 34px; color: var(--c); }
+  .cc-box b { display: block; font-size: .85rem; margin-top: 4px; }
+  .cc-box.on { transform: translateY(-6px) scale(1.05); background: color-mix(in srgb, var(--c) 25%, var(--card)); box-shadow: 0 8px 20px color-mix(in srgb, var(--c) 35%, transparent); }
+  .cc-data { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); white-space: nowrap; }
+  .cc-row .arrow-dash { flex: 0 0 18px; }
+</style>
+<script>
+// Как компьютер решает пример 2 + 3: данные переходят от устройства к устройству.
+const BOX = [["Клавиатура", "keyboard", "var(--c1)"], ["Память", "chip", "var(--c6)"], ["Процессор", "brain", "var(--c4)"], ["Монитор", "monitor", "var(--c2)"]];
+const STEPS = [
+  [0, "Ввод: ученик набирает на клавиатуре «2 + 3»", "2 + 3"],
+  [1, "Память: числа и команда сохраняются в оперативной памяти", "2 + 3"],
+  [2, "Процессор: берёт данные из памяти и считает 2 + 3 = 5", "5"],
+  [1, "Память: результат 5 записывается обратно", "5"],
+  [3, "Вывод: монитор показывает ответ 5", "5"],
+];
+const row = document.getElementById("cc-row"), text = document.getElementById("cc-text");
+row.innerHTML = BOX.map((b, i) => `${i ? '<span class="arrow-dash"></span>' : ""}<div class="cc-box" style="--c:${b[2]}" data-i="${i}">${BB.icon(b[1])}<b>${b[0]}</b></div>`).join("");
+let step = 0, auto = null;
+function show(i) {
+  step = Math.max(0, Math.min(STEPS.length - 1, i));
+  const [where, msg, data] = STEPS[step];
+  row.querySelectorAll(".cc-box").forEach(b => {
+    const on = +b.dataset.i === where;
+    b.classList.toggle("on", on);
+    b.querySelector(".cc-data")?.remove();
+    if (on) b.insertAdjacentHTML("beforeend", `<span class="chip cc-data pop mono" style="--c:${BOX[where][2]}">${data}</span>`);
+  });
+  text.textContent = `Шаг ${step + 1} из ${STEPS.length}. ${msg}`;
+  document.getElementById("cc-back").disabled = step === 0;
+  document.getElementById("cc-next").disabled = step === STEPS.length - 1;
+}
+document.getElementById("cc-next").onclick = () => show(step + 1);
+document.getElementById("cc-back").onclick = () => show(step - 1);
+document.getElementById("cc-auto").onclick = () => {
+  clearInterval(auto); show(0);
+  auto = setInterval(() => { if (step >= STEPS.length - 1 || !row.isConnected) clearInterval(auto); else show(step + 1); }, 1500);
+};
+show(0);
+</script>

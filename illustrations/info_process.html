@@ -1,0 +1,47 @@
+<div class="widget">
+  <div class="stage">
+    <div class="small muted" style="text-align:center">Какой это информационный процесс?</div>
+    <div style="text-align:center;margin:10px 0 14px"><span class="tile on floaty" id="ip-ex" style="--c: var(--c3);font-size:1.05rem"></span></div>
+    <div class="ip-grid" id="ip-grid"></div>
+  </div>
+  <div id="ip-text" class="readout">Счёт: 0</div>
+</div>
+<style>
+  .ip-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .ip-grid .tile { flex-direction: column; padding: 12px 6px; }
+  .ip-grid .tile .icon { width: 28px; height: 28px; }
+  @media (max-width: 520px) { .ip-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+<script>
+// Мини-игра: появляется пример, нужно выбрать процесс — сбор, хранение, обработка или передача.
+const PROC = [["Сбор", "search", 1], ["Хранение", "save", 6], ["Обработка", "gear", 4], ["Передача", "mail", 2]];
+const EX = [
+  ["Измерить температуру на улице", 0], ["Спросить у прохожего дорогу", 0], ["Сфотографировать расписание", 0],
+  ["Записать номер телефона в блокнот", 1], ["Сохранить файл на флешку", 1], ["Выучить стихотворение", 1],
+  ["Решить задачу по математике", 2], ["Перевести текст на английский", 2], ["Расставить фамилии по алфавиту", 2],
+  ["Позвонить другу", 3], ["Отправить письмо", 3], ["Рассказать новость классу", 3],
+];
+const grid = document.getElementById("ip-grid"), ex = document.getElementById("ip-ex"), text = document.getElementById("ip-text");
+grid.innerHTML = PROC.map((p, i) => `<button type="button" class="tile" style="--c: var(--c${p[2]})" data-i="${i}">${BB.icon(p[1])}${p[0]}</button>`).join("");
+let score = 0, tries = 0, cur = null, deck = [];
+function next() {
+  if (!deck.length) deck = EX.map((_, i) => i).sort(() => Math.random() - 0.5);
+  cur = EX[deck.pop()];
+  ex.textContent = cur[0];
+  ex.classList.remove("pop"); void ex.offsetWidth; ex.classList.add("pop");
+}
+grid.addEventListener("click", e => {
+  const t = e.target.closest(".tile"); if (!t || !cur) return;
+  tries++;
+  if (+t.dataset.i === cur[1]) {
+    score++;
+    t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 450);
+    text.textContent = `Верно, это ${PROC[cur[1]][0].toLowerCase()}! Счёт: ${score} из ${tries}`;
+    setTimeout(next, 450);
+  } else {
+    t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake");
+    text.textContent = `Не совсем. Подумай ещё. Счёт: ${score} из ${tries}`;
+  }
+});
+next();
+</script>

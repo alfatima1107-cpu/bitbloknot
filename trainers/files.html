@@ -1,0 +1,173 @@
+<div class="tabs" id="fl-tabs">
+  <button class="btn small active" data-tab="path">Пути к файлам</button>
+  <button class="btn small" data-tab="mask">Маски * и ?</button>
+  <button class="btn small" data-tab="ext">Тип по расширению</button>
+</div>
+
+<div class="row" style="align-items:flex-start;gap:18px">
+  <div class="fl-tree" id="fl-tree" aria-label="Дерево папок"></div>
+  <div style="flex:1;min-width:260px">
+    <div data-fpane="path">
+      <div class="card" style="background:var(--card-2)">
+        <div id="pt-q"></div>
+        <div class="row" style="margin-top:8px" id="pt-inrow"><input type="text" id="pt-ans" style="width:100%" placeholder="D:\Папка\файл.txt" autocomplete="off"></div>
+        <div class="row" style="margin-top:8px"><button class="btn primary small" id="pt-check">Проверить</button><button class="btn small" id="pt-new"><i data-icon="dice"></i> Другое задание</button></div>
+        <div class="feedback hidden" id="pt-fb"></div>
+      </div>
+      <div class="small muted" style="margin-top:6px">Подсказка: нажми на файл в дереве слева — внизу появится его полный путь.</div>
+      <div class="stat" style="margin-top:8px"><div class="k">Выбранный файл</div><div class="mono" id="pt-sel">—</div></div>
+    </div>
+    <div data-fpane="mask" class="hidden">
+      <div class="card" style="background:var(--card-2)">
+        <label class="small muted">Маска для поиска файлов</label>
+        <input type="text" id="mk-in" value="*.txt" style="width:100%;margin-top:4px" class="mono">
+        <div class="small muted" style="margin-top:6px"><code>*</code> — любое количество любых символов, <code>?</code> — ровно один символ</div>
+        <div class="stat" style="margin-top:8px"><div class="k">Найдено файлов</div><div class="v" id="mk-count"></div></div>
+      </div>
+      <div class="card" style="background:var(--card-2);margin-top:10px">
+        <div id="mk-q"></div>
+        <div class="row" style="margin-top:8px"><button class="btn primary small" id="mk-check">Проверить маску</button><button class="btn small" id="mk-new"><i data-icon="dice"></i> Другое задание</button></div>
+        <div class="feedback hidden" id="mk-fb"></div>
+      </div>
+    </div>
+    <div data-fpane="ext" class="hidden">
+      <p class="muted small">Что хранится в файле? Определи по расширению. 6 вопросов.</p>
+      <div class="card" style="background:var(--card-2)">
+        <div id="ex-q" style="font-size:1.1rem"></div>
+        <div class="row" id="ex-opts" style="margin-top:10px"></div>
+        <div class="feedback hidden" id="ex-fb"></div>
+      </div>
+      <div class="small muted" id="ex-score" style="margin-top:6px"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #fl-tabs .btn.active { border-color: var(--ac); color: var(--acs); background: var(--acb); }
+  .fl-tree { background: var(--card-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: .9rem; min-width: 250px; font-family: var(--mono); }
+  .fl-tree ul { list-style: none; margin: 0; padding-left: 18px; border-left: 1px dotted var(--line); }
+  .fl-tree > ul { padding-left: 0; border: 0; }
+  .fl-tree li { margin: 2px 0; }
+  .fl-tree .f { cursor: pointer; padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+  .fl-tree .f:hover { background: var(--card); }
+  .fl-tree .f.sel { background: var(--acb); color: var(--acs); }
+  .fl-tree .f.hit { background: var(--okb); color: var(--ok); }
+  .fl-tree .d { color: var(--wr); display: inline-flex; align-items: center; gap: 4px; }
+</style>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const TREE = { name: "D:", kids: [
+    { name: "Школа", kids: [
+      { name: "Информатика", kids: ["доклад.docx", "задачи.txt", "код.py", { name: "Тесты", kids: ["тест1.txt", "ответы.txt"] }] },
+      { name: "Физика", kids: ["опыт.jpg", "отчёт.docx", "графики.xlsx"] },
+      "расписание.pdf",
+    ]},
+    { name: "Музыка", kids: ["песня.mp3", "гимн.mp3", "мелодия.wav"] },
+    { name: "Фото", kids: [{ name: "Лето", kids: ["море.jpg", "кот.png", "закат.jpg"] }, "семья.jpg"] },
+    { name: "Игры", kids: ["игра.exe", "сохранение.dat"] },
+    "заметка.txt",
+  ]};
+  const files = [];   // [{name, path}]
+  function render(node, path) {
+    const ul = document.createElement("ul");
+    node.kids.forEach(k => {
+      const li = document.createElement("li");
+      if (typeof k === "string") {
+        const p = path + "\\" + k;
+        li.innerHTML = `<span class="f" data-path="${p}" data-name="${k}">${BB.icon("file")} ${k}</span>`;
+        files.push({ name: k, path: p });
+      } else {
+        li.innerHTML = `<span class="d">${BB.icon("folder")} ${k.name}</span>`;
+        li.appendChild(render(k, path + "\\" + k.name));
+      }
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+  const root = document.createElement("ul");
+  const rli = document.createElement("li"); rli.innerHTML = `<span class="d">${BB.icon("drive")} D:</span>`; rli.appendChild(render(TREE, "D:")); root.appendChild(rli);
+  $("fl-tree").appendChild(root);
+  const fileEls = [...document.querySelectorAll(".fl-tree .f")];
+  fileEls.forEach(el => el.addEventListener("click", () => {
+    fileEls.forEach(x => x.classList.remove("sel")); el.classList.add("sel"); $("pt-sel").textContent = el.dataset.path;
+  }));
+
+  document.querySelectorAll("#fl-tabs [data-tab]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#fl-tabs [data-tab]").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll("[data-fpane]").forEach(p => p.classList.toggle("hidden", p.dataset.fpane !== b.dataset.tab));
+    fileEls.forEach(x => x.classList.remove("hit", "sel"));
+    if (b.dataset.tab === "mask") mask();
+  }));
+
+  // ---------- пути ----------
+  const norm = s => s.trim().toLowerCase().replace(/ё/g, "е").replace(/\\+$/, "");
+  let pt;
+  function ptNew() {
+    $("pt-fb").className = "feedback hidden"; $("pt-ans").value = "";
+    const f = files[Math.floor(Math.random() * files.length)];
+    pt = f.path;
+    $("pt-q").innerHTML = `Запиши полный путь к файлу <code>${f.name}</code>.`;
+  }
+  $("pt-new").addEventListener("click", ptNew);
+  $("pt-check").addEventListener("click", () => {
+    const v = $("pt-ans").value;
+    if (!v.trim()) { BB.feedback($("pt-fb"), "bad", "Сначала напиши путь"); return; }
+    if (norm(v) === norm(pt)) { BB.feedback($("pt-fb"), "ok", `<div class="fh">Верно!</div><span class="mono">${pt}</span>`); BB.trainerDone(); }
+    else if (norm(v.replace(/\//g, "\\")) === norm(pt)) BB.feedback($("pt-fb"), "warn", "<div class='fh'>Почти!</div>В Windows части пути разделяют обратной косой чертой <code>\\</code>, а не <code>/</code>.");
+    else if (!/^[a-z]:/i.test(v.trim())) BB.feedback($("pt-fb"), "warn", "<div class='fh'>Почти!</div>Полный путь начинается с имени диска: <code>D:\\</code>");
+    else BB.feedback($("pt-fb"), "bad", "Не совсем. Найди файл в дереве и пройди путь от диска через все папки по порядку.");
+  });
+  ptNew();
+
+  // ---------- маски ----------
+  function toRe(m) { return new RegExp("^" + m.toLowerCase().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$"); }
+  function mask() {
+    const m = $("mk-in").value.trim(); let n = 0;
+    let re = null; try { re = m ? toRe(m) : null; } catch (e) {}
+    fileEls.forEach(el => { const name = el.dataset.name; const hit = re && re.test(name.toLowerCase()); el.classList.toggle("hit", hit); n += hit; });
+    $("mk-count").textContent = n;
+    return re;
+  }
+  const MASKS = [
+    ["Найди все файлы с расширением <code>.jpg</code>", f => f.endsWith(".jpg")],
+    ["Найди все файлы, имя которых начинается на букву «о»", f => f.startsWith("о")],
+    ["Найди все звуковые файлы <code>.mp3</code>", f => f.endsWith(".mp3")],
+    ["Найди все файлы с расширением из трёх букв, которое начинается на «t» (txt)", f => /\.t..$/.test(f)],
+    ["Найди файлы, у которых имя состоит ровно из трёх букв (любое расширение)", f => /^[^.]{3}\.[^.]+$/.test(f)],
+  ];
+  let mk;
+  function mkNew() { mk = MASKS[Math.floor(Math.random() * MASKS.length)]; $("mk-q").innerHTML = mk[0] + ". Подбери маску."; $("mk-fb").className = "feedback hidden"; }
+  $("mk-in").addEventListener("input", () => { mask(); $("mk-fb").className = "feedback hidden"; });
+  $("mk-new").addEventListener("click", mkNew);
+  $("mk-check").addEventListener("click", () => {
+    const re = mask();
+    if (!re) { BB.feedback($("mk-fb"), "bad", "Сначала введи маску"); return; }
+    const want = files.filter(f => mk[1](f.name.toLowerCase())).map(f => f.name).sort().join();
+    const got = files.filter(f => re.test(f.name.toLowerCase())).map(f => f.name).sort().join();
+    if (want === got) { BB.feedback($("mk-fb"), "ok", `<div class="fh">Маска подходит!</div>Найдены все нужные файлы и ничего лишнего.`); BB.trainerDone(); }
+    else BB.feedback($("mk-fb"), "bad", "Маска находит не те файлы (зелёным подсвечено, что она нашла). Помни: <code>*</code> — сколько угодно символов, <code>?</code> — ровно один.");
+  });
+  mkNew();
+
+  // ---------- расширения ----------
+  const EXT = [["песня.mp3", "звук"], ["кот.png", "рисунок"], ["доклад.docx", "текстовый документ"], ["игра.exe", "программа"], ["фильм.mp4", "видео"],
+               ["фото.jpg", "рисунок"], ["архив.zip", "архив"], ["заметка.txt", "текстовый документ"], ["запись.wav", "звук"], ["клип.avi", "видео"]];
+  const KINDS = ["звук", "рисунок", "текстовый документ", "программа", "видео", "архив"];
+  let eo, ek, er;
+  function exStart() { eo = [...EXT].sort(() => Math.random() - 0.5).slice(0, 6); ek = 0; er = 0; exShow(); }
+  function exShow() {
+    if (ek >= 6) { $("ex-score").textContent = `Итог: ${er} из 6`; if (er >= 5) BB.trainerDone(); $("ex-q").innerHTML = er >= 5 ? "Отлично! Ты знаешь расширения." : "Попробуй ещё раз."; $("ex-opts").innerHTML = ""; const b = document.createElement("button"); b.className = "btn small"; b.textContent = "Ещё раз"; b.onclick = exStart; $("ex-opts").appendChild(b); return; }
+    const [name, kind] = eo[ek];
+    $("ex-q").innerHTML = `<code>${name}</code>`; $("ex-fb").className = "feedback hidden"; $("ex-opts").innerHTML = "";
+    KINDS.forEach(k => { const b = document.createElement("button"); b.className = "choice"; b.textContent = k; b.onclick = () => {
+      const ok = k === kind; er += ok; b.classList.add(ok ? "right" : "wrong");
+      BB.feedback($("ex-fb"), ok ? "ok" : "bad", ok ? "Верно!" : `Нет: .${name.split(".").pop()} — это ${kind}.`);
+      [...$("ex-opts").children].forEach(x => x.disabled = true); ek++; setTimeout(exShow, 1100);
+    }; $("ex-opts").appendChild(b); });
+    $("ex-score").textContent = `Вопрос ${ek + 1} из 6 · верно: ${er}`;
+  }
+  exStart();
+})();
+</script>

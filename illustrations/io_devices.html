@@ -1,0 +1,54 @@
+<div class="widget">
+  <div class="stage">
+    <div class="small muted" style="text-align:center;margin-bottom:8px">Нажми на устройство, потом на корзину, куда оно относится</div>
+    <div class="flow" id="io-items" style="gap:8px"></div>
+    <div class="io-bins" id="io-bins"></div>
+  </div>
+  <div id="io-text" class="readout">Разложи все 8 устройств</div>
+</div>
+<style>
+  .io-bins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .io-bin { --c: var(--ac); border: 2px dashed color-mix(in srgb, var(--c) 60%, transparent); border-radius: 12px; padding: 8px; min-height: 96px;
+    background: color-mix(in srgb, var(--c) 8%, transparent); cursor: pointer; transition: background .2s, transform .2s; }
+  .io-bin:hover { background: color-mix(in srgb, var(--c) 16%, transparent); transform: translateY(-2px); }
+  .io-bin h4 { margin: 0 0 6px; text-align: center; color: color-mix(in srgb, var(--c) 85%, var(--tx)); font-size: .95rem; }
+  .io-bin .flow { gap: 4px; }
+  .io-bin .tile { padding: 4px 8px; font-size: .85rem; cursor: default; }
+  @media (max-width: 520px) { .io-bins { grid-template-columns: 1fr; } }
+</style>
+<script>
+// Сортировка устройств: ввод, вывод или хранение. Верно — устройство прыгает в корзину, неверно — трясётся.
+const DEV = [
+  ["Клавиатура", "keyboard", 0], ["Мышь", "mouse", 0], ["Микрофон", "mic", 0], ["Камера", "camera", 0],
+  ["Монитор", "monitor", 1], ["Колонки", "volume", 1], ["Принтер", "printer", 1],
+  ["Флешка", "drive", 2],
+];
+const BINS = [["Ввод", "var(--c1)", "информация попадает в компьютер"], ["Вывод", "var(--c4)", "компьютер выдаёт результат наружу"], ["Хранение", "var(--c6)", "информация лежит долго, даже без питания"]];
+const items = document.getElementById("io-items"), bins = document.getElementById("io-bins"), text = document.getElementById("io-text");
+let picked = null, done = 0;
+const order = DEV.map((_, i) => i).sort(() => Math.random() - 0.5);
+items.innerHTML = order.map(i => `<button type="button" class="tile pop" style="--c: var(--c${(i % 6) + 1})" data-i="${i}">${BB.icon(DEV[i][1])} ${DEV[i][0]}</button>`).join("");
+bins.innerHTML = BINS.map((b, j) => `<div class="io-bin" style="--c: ${b[1]}" data-b="${j}"><h4>${b[0]}</h4><div class="flow"></div></div>`).join("");
+items.addEventListener("click", e => {
+  const t = e.target.closest(".tile"); if (!t) return;
+  picked = picked === t ? null : t;
+  items.querySelectorAll(".tile").forEach(x => x.classList.toggle("picked", x === picked));
+  if (picked) text.textContent = `${DEV[+t.dataset.i][0]}: в какую корзину?`;
+});
+bins.addEventListener("click", e => {
+  const bin = e.target.closest(".io-bin"); if (!bin || !picked) return;
+  const i = +picked.dataset.i, j = +bin.dataset.b;
+  if (DEV[i][2] === j) {
+    const chip = document.createElement("span");
+    chip.className = "tile pop"; chip.style.setProperty("--c", BINS[j][1]);
+    chip.innerHTML = `${BB.icon(DEV[i][1])} ${DEV[i][0]}`;
+    bin.querySelector(".flow").appendChild(chip);
+    picked.remove(); picked = null; done++;
+    text.textContent = done === DEV.length ? "Все устройства на местах! Ввод — внутрь компьютера, вывод — наружу, хранение — надолго." :
+      `Верно: ${BINS[j][0].toLowerCase()} — ${BINS[j][2]}. Осталось ${DEV.length - done}.`;
+  } else {
+    picked.classList.remove("shake"); void picked.offsetWidth; picked.classList.add("shake");
+    text.textContent = `Не совсем: ${DEV[i][0].toLowerCase()} — это не «${BINS[j][0].toLowerCase()}». Информация идёт в компьютер или из него?`;
+  }
+});
+</script>

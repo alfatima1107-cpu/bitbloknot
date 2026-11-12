@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru" data-theme="dark" data-accent="blue">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>БитБлокнот — информатика 7 класс</title>
+  <meta name="description" content="Интерактивный репетитор по информатике для 7 класса: уроки, тренажёры, бесконечные задачи и кабинет учителя.">
+  <script>try { var d = document.documentElement; d.dataset.theme = localStorage.getItem("bb-theme") || "dark"; d.dataset.accent = localStorage.getItem("bb-accent") || "blue"; } catch (e) {}</script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237aa7ff' stroke-width='2'%3E%3Cpath d='M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM9 4v16M13 8h2M13 12h2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="topbar"></header>
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-text">
+        <div class="hero-tag mono">01000010 01000010 · 7 класс</div>
+        <h1>Информатика, которую<br>можно потрогать</h1>
+        <p class="hero-lead">БитБлокнот — интерактивный репетитор по информатике для 7 класса.
+          Короткие уроки с картинками, тренажёры-игры, бесконечные задачи и подсказки,
+          которые понимают, <b>в чём именно</b> ты ошибся.</p>
+        <div class="role-buttons">
+          <a class="role-btn" href="student-login.html" id="btn-student">
+            <span class="role-icon"><i data-icon="backpack"></i></span>
+            <span><b>Я ученик</b><span class="small muted">Войти по коду класса</span></span>
+          </a>
+          <a class="role-btn" href="teacher-login.html" id="btn-teacher">
+            <span class="role-icon"><i data-icon="teacher"></i></span>
+            <span><b>Я учитель</b><span class="small muted">Создать класс и видеть прогресс</span></span>
+          </a>
+        </div>
+        <button class="btn ghost small soon-btn" type="button" disabled title="Скоро"><i data-icon="book"></i> Учиться самостоятельно — скоро</button>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="bits" id="bits"></div>
+      </div>
+    </section>
+
+    <h2 class="section-h">Что внутри</h2>
+    <div class="features">
+      <div class="feature"><span class="f-icon"><i data-icon="book"></i></span><b>12 тем курса</b><span class="muted small">Устройства, файлы, сети, двоичный код, кодирование текста, картинок и звука, документы, графика, презентации — по ФГОС.</span></div>
+      <div class="feature"><span class="f-icon"><i data-icon="flask"></i></span><b>Тренажёры-игры</b><span class="muted small">«Собери компьютер», «Пиксельный художник», «Звукозапись», «Шифровальщик», «Лестница единиц» и другие.</span></div>
+      <div class="feature"><span class="f-icon"><i data-icon="infinity"></i></span><b>Бесконечные задачи</b><span class="muted small">Задачи генерируются заново каждый раз, три уровня сложности подстраиваются под ученика.</span></div>
+      <div class="feature"><span class="f-icon"><i data-icon="search"></i></span><b>Диагностика ошибок</b><span class="muted small">«Похоже, ты перепутал биты и байты» — подсказка именно про твою ошибку, а не просто «неверно».</span></div>
+      <div class="feature"><span class="f-icon"><i data-icon="brain"></i></span><b>Умный репетитор</b><span class="muted small">Советует, чем заняться сегодня, и возвращает к сданным темам через 1, 3 и 7 дней.</span></div>
+      <div class="feature"><span class="f-icon"><i data-icon="users"></i></span><b>Кабинет учителя</b><span class="muted small">Учитель создаёт класс, раздаёт коды входа и видит прогресс каждого ученика по всем темам.</span></div>
+    </div>
+
+    <h2 class="section-h">Как начать</h2>
+    <div class="how">
+      <div class="how-step"><span class="how-n mono">1</span><div><b>Учитель создаёт класс</b><br><span class="muted small">Например «7Б» — система выдаёт уникальный код класса из 6 цифр.</span></div></div>
+      <div class="how-step"><span class="how-n mono">2</span><div><b>Добавляет учеников</b><br><span class="muted small">Каждый получает личный код из 4 цифр. Карточки входа можно распечатать.</span></div></div>
+      <div class="how-step"><span class="how-n mono">3</span><div><b>Ученик входит</b><br><span class="muted small">Код класса + личный код, выбирает аватар — и вперёд, к первому уроку!</span></div></div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { page } from "./js/ui.js";
+    page({ home: "index.html" });
+    // Живая «стена битов» справа: нули и единицы иногда переворачиваются
+    const box = document.getElementById("bits");
+    const N = 64;
+    box.innerHTML = Array.from({ length: N }, () => `<span>${Math.random() < .5 ? 0 : 1}</span>`).join("");
+    const cells = [...box.children];
+    setInterval(() => {
+      const c = cells[Math.floor(Math.random() * N)];
+      c.textContent = c.textContent === "0" ? "1" : "0";
+      c.classList.add("flip"); setTimeout(() => c.classList.remove("flip"), 600);
+    }, 220);
+  </script>
+</body>
+</html>

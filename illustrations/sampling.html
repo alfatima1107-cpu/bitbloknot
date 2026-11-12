@@ -1,0 +1,47 @@
+<div class="widget">
+  <div class="stage"><canvas id="sm-c" width="640" height="240" style="width:100%;height:auto;display:block"></canvas></div>
+  <div class="controls">
+    <label class="small muted"><span>Частота дискретизации: <b id="sm-fv">12</b> замеров</span><input id="sm-f" type="range" min="4" max="60" value="12"></label>
+    <label class="small muted"><span>Разрядность: <b id="sm-dv">3</b> бит = <b id="sm-lv">8</b> уровней</span><input id="sm-d" type="range" min="1" max="6" value="3"></label>
+  </div>
+  <div id="sm-text" class="readout"></div>
+</div>
+<script>
+// Оцифровка звука: волна (серая), замеры (точки) и «ступеньки» — то, что сохранит компьютер.
+const c = document.getElementById("sm-c"), x = c.getContext("2d");
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const wave = t => 0.55 * Math.sin(2 * Math.PI * 2 * t) + 0.3 * Math.sin(2 * Math.PI * 5 * t + 1);
+let phase = 0;
+function draw() {
+  const f = +document.getElementById("sm-f").value, d = +document.getElementById("sm-d").value, L = 2 ** d;
+  document.getElementById("sm-fv").textContent = f; document.getElementById("sm-dv").textContent = d; document.getElementById("sm-lv").textContent = L;
+  const W = c.width, H = c.height, mid = H / 2, A = H * 0.42;
+  x.clearRect(0, 0, W, H);
+  // уровни
+  x.strokeStyle = css("--line"); x.lineWidth = 1;
+  for (let k = 0; k < L; k++) { const y = mid - A + (2 * A) * k / (L - 1); x.beginPath(); x.moveTo(0, y); x.lineTo(W, y); x.stroke(); }
+  // исходная волна
+  x.strokeStyle = css("--mut"); x.lineWidth = 2; x.beginPath();
+  for (let px = 0; px <= W; px++) { const y = mid - A * wave(px / W + phase); px ? x.lineTo(px, y) : x.moveTo(px, y); }
+  x.stroke();
+  // ступеньки
+  const q = v => Math.round((v + 0.85) / 1.7 * (L - 1)) / (L - 1) * 1.7 - 0.85;
+  const grad = x.createLinearGradient(0, 0, W, 0);
+  ["--c1", "--c6", "--c5", "--c4"].forEach((n, i) => grad.addColorStop(i / 3, css(n)));
+  x.strokeStyle = grad; x.lineWidth = 3.5; x.beginPath();
+  for (let k = 0; k < f; k++) {
+    const t0 = k / f, y = mid - A * q(wave(t0 + phase)) / 0.85;
+    const x0 = t0 * W, x1 = (k + 1) / f * W;
+    k ? x.lineTo(x0, y) : x.moveTo(x0, y); x.lineTo(x1, y);
+  }
+  x.stroke();
+  for (let k = 0; k < f; k++) {
+    const t0 = k / f, y = mid - A * q(wave(t0 + phase)) / 0.85;
+    x.fillStyle = css(`--c${(k % 6) + 1}`); x.beginPath(); x.arc(t0 * W, y, 5, 0, 7); x.fill();
+  }
+  document.getElementById("sm-text").textContent = `${f} замеров × ${d} бит = ${f * d} бит. Больше замеров и уровней — ступеньки ближе к настоящей волне.`;
+}
+["sm-f", "sm-d"].forEach(id => document.getElementById(id).addEventListener("input", draw));
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+(function loop() { if (!c.isConnected) return; if (!reduced) phase += 0.0015; draw(); requestAnimationFrame(loop); })();
+</script>

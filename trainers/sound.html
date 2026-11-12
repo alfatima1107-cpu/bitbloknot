@@ -1,0 +1,183 @@
+<div class="tabs" id="sd-tabs">
+  <button class="btn small active" data-tab="wave"><i data-icon="volume"></i> Оцифровка звука</button>
+  <button class="btn small" data-tab="calc"><i data-icon="pencil"></i> Калькулятор объёма</button>
+</div>
+
+<div data-spane="wave">
+  <p class="muted small">Микрофон превращает звук в волну. Компьютер много раз в секунду делает <b>замеры</b> волны (дискретизация) и округляет каждый замер до одного из уровней (разрядность). Подвигай ползунки и послушай разницу.</p>
+  <div class="row small" style="margin-bottom:8px">
+    <span class="muted">Звук:</span>
+    <span class="row" id="sd-sig"><button class="btn small active" data-sig="tone">Чистый тон</button><button class="btn small" data-sig="voice">«Голос» (сложная волна)</button></span>
+  </div>
+  <canvas id="sd-canvas" width="900" height="260" style="width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:var(--card-2)"></canvas>
+  <div class="row small muted" style="gap:16px;margin:4px 0 10px">
+    <span><span style="color:var(--mut)">━</span> исходная волна</span>
+    <span><span style="color:var(--ac)">●</span> замеры</span>
+    <span><span style="color:var(--wr)">━</span> что сохранит компьютер</span>
+  </div>
+  <div class="sd-ctrl">
+    <label>Частота дискретизации</label>
+    <input type="range" id="sd-rate" min="0" max="5" step="1" value="2">
+    <span class="mono" id="sd-rate-v"></span>
+    <label>Разрядность</label>
+    <input type="range" id="sd-bits" min="1" max="8" step="1" value="3">
+    <span class="mono" id="sd-bits-v"></span>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" id="sd-play-orig"><i data-icon="play"></i> Послушать оригинал</button>
+    <button class="btn primary" id="sd-play-dig"><i data-icon="play"></i> Послушать оцифровку</button>
+    <button class="btn ghost hidden" id="sd-stop"><i data-icon="stop"></i> Стоп</button>
+  </div>
+  <div class="small muted" style="margin-top:6px" id="sd-note"></div>
+</div>
+
+<div data-spane="calc" class="hidden">
+  <p class="muted small">Объём звукового файла: <span class="formula">I = частота × разрядность × время × каналы</span></p>
+  <div class="sd-grid">
+    <label>Частота<select id="cl-f"><option value="8000">8 кГц (телефон)</option><option value="22050">22,05 кГц (радио)</option><option value="44100" selected>44,1 кГц (CD)</option><option value="48000">48 кГц (видео)</option></select></label>
+    <label>Разрядность<select id="cl-b"><option value="8">8 бит</option><option value="16" selected>16 бит</option><option value="24">24 бита</option></select></label>
+    <label>Каналы<select id="cl-c"><option value="1">моно (1)</option><option value="2" selected>стерео (2)</option></select></label>
+    <label>Время, с<input type="number" id="cl-t" min="1" max="3600" value="180" style="width:100px"></label>
+  </div>
+  <div class="stat" style="margin-top:10px"><div class="k">Расчёт по шагам</div><ol id="cl-steps" style="margin:6px 0 0;padding-left:1.3em"></ol></div>
+  <div class="card" style="background:var(--card-2);margin-top:12px">
+    <div id="cl-q"></div>
+    <div class="row" style="margin-top:8px"><input type="text" id="cl-ans" inputmode="decimal" style="width:140px" placeholder="Ответ"><span class="muted" id="cl-unit"></span><button class="btn primary small" id="cl-check">Проверить</button><button class="btn small" id="cl-new"><i data-icon="dice"></i> Другая</button></div>
+    <div class="feedback hidden" id="cl-fb"></div>
+  </div>
+</div>
+
+<style>
+  #sd-tabs .btn.active, #sd-sig .btn.active { border-color: var(--ac); color: var(--acs); background: var(--acb); }
+  .sd-ctrl { display: grid; grid-template-columns: max-content 1fr 120px; gap: 8px 12px; align-items: center; }
+  .sd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+  .sd-grid label { display: flex; flex-direction: column; gap: 4px; color: var(--mut); font-size: .85rem; }
+  @media (max-width: 600px) { .sd-ctrl { grid-template-columns: 1fr; } }
+</style>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const RATES = [1000, 2000, 4000, 8000, 22050, 44100];
+  let sig = "tone";
+
+  document.querySelectorAll("#sd-tabs [data-tab]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#sd-tabs [data-tab]").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll("[data-spane]").forEach(p => p.classList.toggle("hidden", p.dataset.spane !== b.dataset.tab));
+  }));
+  document.querySelectorAll("#sd-sig [data-sig]").forEach(b => b.addEventListener("click", () => {
+    sig = b.dataset.sig; document.querySelectorAll("#sd-sig [data-sig]").forEach(x => x.classList.toggle("active", x === b)); draw();
+  }));
+
+  // сигнал: t — время в секундах; базовая частота 220 Гц (нота ля)
+  function wave(t) {
+    const w = 2 * Math.PI * 220 * t;
+    if (sig === "tone") return 0.9 * Math.sin(w);
+    return 0.5 * Math.sin(w) + 0.3 * Math.sin(3 * w + 0.5) + 0.15 * Math.sin(5 * w + 1) + 0.05 * Math.sin(9 * w);
+  }
+  const quant = (v, bits) => { const L = 2 ** bits; const step = 2 / (L - 1); return Math.round((v + 1) / step) * step - 1; };
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  function draw() {
+    const rate = RATES[+$("sd-rate").value], bits = +$("sd-bits").value;
+    $("sd-rate-v").textContent = (rate / 1000).toLocaleString("ru-RU") + " кГц";
+    $("sd-bits-v").textContent = bits + " бит · " + 2 ** bits + " ур.";
+    const cv = $("sd-canvas"), x = cv.getContext("2d"), W = cv.width, H = cv.height, mid = H / 2, amp = H * 0.42;
+    const T = 2 / 220;                 // показываем два периода волны
+    x.clearRect(0, 0, W, H);
+    // уровни
+    const L = 2 ** bits;
+    x.strokeStyle = css("--line"); x.lineWidth = 1;
+    if (L <= 32) for (let k = 0; k < L; k++) { const y = mid - (-1 + k * 2 / (L - 1)) * amp; x.beginPath(); x.moveTo(0, y); x.lineTo(W, y); x.stroke(); }
+    // исходная волна
+    x.strokeStyle = css("--mut"); x.lineWidth = 2; x.beginPath();
+    for (let px = 0; px <= W; px++) { const y = mid - wave(px / W * T) * amp; px ? x.lineTo(px, y) : x.moveTo(px, y); }
+    x.stroke();
+    // замеры и «ступеньки»
+    const count = Math.max(3, Math.round(T * rate / 2));     // число замеров на двух периодах
+    const shown = Math.min(count, 90);
+    const dt = T / shown;
+    x.strokeStyle = css("--wr"); x.lineWidth = 3; x.beginPath();
+    for (let k = 0; k <= shown; k++) {
+      const t = k * dt, q = quant(wave(t), bits), X = t / T * W, Y = mid - q * amp;
+      if (k === 0) x.moveTo(X, Y); else x.lineTo(X, Y);
+      x.lineTo(Math.min(W, X + dt / T * W), Y);
+    }
+    x.stroke();
+    x.fillStyle = css("--ac");
+    for (let k = 0; k <= shown; k++) { const t = k * dt, X = t / T * W, Y = mid - quant(wave(t), bits) * amp; x.beginPath(); x.arc(X, Y, 4, 0, 7); x.fill(); }
+    const perSec = rate * bits;
+    $("sd-note").textContent = `${(rate).toLocaleString("ru-RU")} замеров в секунду × ${bits} бит = ${perSec.toLocaleString("ru-RU")} бит на каждую секунду звука (моно).` +
+      (count > shown ? ` На экране показано ${shown} замеров из ${count} за эти доли секунды.` : "");
+  }
+
+  // ---------- звук ----------
+  let ctx = null, src = null, played = { o: false, d: false };
+  function play(digital) {
+    stop();
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const sr = ctx.sampleRate, dur = 1.6, buf = ctx.createBuffer(1, Math.floor(sr * dur), sr), data = buf.getChannelData(0);
+    const rate = RATES[+$("sd-rate").value], bits = +$("sd-bits").value;
+    let held = 0, nextSample = 0;
+    for (let i = 0; i < data.length; i++) {
+      const t = i / sr;
+      let v = wave(t);
+      if (digital) {
+        if (t >= nextSample) { held = quant(v, bits); nextSample += 1 / rate; }
+        v = held;
+      }
+      const env = Math.min(1, t / 0.03, (dur - t) / 0.05);
+      data[i] = v * 0.35 * env;
+    }
+    src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); src.start();
+    $("sd-stop").classList.remove("hidden");
+    src.onended = () => $("sd-stop").classList.add("hidden");
+    played[digital ? "d" : "o"] = true;
+    if (played.o && played.d) BB.trainerDone();
+  }
+  function stop() { if (src) { try { src.stop(); } catch (e) {} src = null; } $("sd-stop").classList.add("hidden"); }
+  $("sd-play-orig").addEventListener("click", () => play(false));
+  $("sd-play-dig").addEventListener("click", () => play(true));
+  $("sd-stop").addEventListener("click", stop);
+  ["sd-rate", "sd-bits"].forEach(id => $(id).addEventListener("input", draw));
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  draw();
+
+  // ---------- калькулятор ----------
+  const f = n => n.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
+  function calc() {
+    const F = +$("cl-f").value, B = +$("cl-b").value, C = +$("cl-c").value, T = Math.max(1, +$("cl-t").value || 1);
+    const bits = F * B * T * C, bytes = bits / 8, kb = bytes / 1024, mb = kb / 1024;
+    $("cl-steps").innerHTML = [
+      `I = ${f(F)} × ${B} × ${f(T)} × ${C} = ${f(bits)} бит`,
+      `${f(bits)} бит : 8 = ${f(bytes)} байт`,
+      `${f(bytes)} байт : 1024 ≈ ${f(kb)} Кбайт`,
+      `${f(kb)} Кбайт : 1024 ≈ <b>${f(mb)} Мбайт</b>`,
+    ].map(s => `<li>${s}</li>`).join("") +
+      (F === 44100 && B === 16 && C === 2 && T === 180 ? "<li class='muted'>Вот почему песня на 3 минуты в качестве CD весит около 30 Мбайт!</li>" : "");
+  }
+  ["cl-f", "cl-b", "cl-c", "cl-t"].forEach(id => $(id).addEventListener("input", calc));
+  calc();
+
+  let q = null;
+  function newQ() {
+    const fr = [8, 16, 32][Math.floor(Math.random() * 3)], b = [8, 16][Math.floor(Math.random() * 2)];
+    const t = [2, 4, 5, 10][Math.floor(Math.random() * 4)], st = Math.random() < 0.5;
+    const ans = fr * 1000 * b * t * (st ? 2 : 1) / 8;
+    q = { ans, mono: ans / (st ? 2 : 1), bits: ans * 8, st };
+    $("cl-q").innerHTML = `Задача: ${st ? "стерео" : "моно"}, ${fr} кГц, ${b} бит, ${t} с. Сколько это <b>байт</b>?`;
+    $("cl-unit").textContent = "байт"; $("cl-ans").value = ""; $("cl-fb").className = "feedback hidden";
+  }
+  $("cl-new").addEventListener("click", newQ);
+  $("cl-check").addEventListener("click", () => {
+    const raw = $("cl-ans").value.replace(/\s/g, "").replace(",", ".");
+    if (!raw) { BB.feedback($("cl-fb"), "bad", "Сначала введи ответ"); return; }
+    const v = Number(raw);
+    if (v === q.ans) { BB.feedback($("cl-fb"), "ok", `<div class="fh">Верно!</div>${f(q.ans)} байт.`); BB.trainerDone(); }
+    else if (v === q.bits) BB.feedback($("cl-fb"), "warn", "<div class='fh'>Почти!</div>Это ответ в битах. Переведи в байты: раздели на 8.");
+    else if (q.st && v === q.mono) BB.feedback($("cl-fb"), "warn", "<div class='fh'>Почти!</div>Не забудь, что в стерео два канала.");
+    else BB.feedback($("cl-fb"), "bad", "Не совсем. Подсказка: частоту в кГц переведи в Гц (× 1000), перемножь всё и раздели на 8.");
+  });
+  newQ();
+})();
+</script>

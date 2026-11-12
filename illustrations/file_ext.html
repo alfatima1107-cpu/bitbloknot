@@ -1,0 +1,43 @@
+<div class="widget">
+  <div class="stage">
+    <div class="flow" style="gap:18px">
+      <div class="fe-card" id="fe-card"><div class="fe-ic" id="fe-ic"></div><div class="mono" id="fe-name" style="font-weight:700"></div><div class="small muted" id="fe-kind"></div></div>
+      <span class="arrow-dash"></span>
+      <div class="tile on floaty" id="fe-app" style="--c: var(--c2)"></div>
+    </div>
+  </div>
+  <div class="controls"><div class="seg" id="fe-seg"></div></div>
+  <div class="small muted hint">Расширение — часть имени после точки. По нему компьютер выбирает программу.</div>
+</div>
+<style>
+  .fe-card { --c: var(--c1); width: 150px; height: 180px; border-radius: 12px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    background: color-mix(in srgb, var(--c) 16%, var(--card)); border: 2px solid var(--c); transition: transform .45s, background .3s, border-color .3s; transform-style: preserve-3d; }
+  .fe-card::after { content: ""; position: absolute; right: -2px; top: -2px; border: 14px solid transparent; border-top-color: var(--card); border-right-color: var(--card); }
+  .fe-card.flip { transform: rotateY(180deg) scale(.9); }
+  .fe-ic .icon { width: 58px; height: 58px; color: var(--c); }
+</style>
+<script>
+// Файл «отчёт» с разными расширениями: карточка переворачивается и показывает, что внутри и чем это открыть.
+const EXT = [
+  [".docx", "документ", "текстовый процессор", "file", 1], [".txt", "простой текст", "блокнот", "pencil", 6],
+  [".mp3", "музыка", "проигрыватель", "headphones", 5], [".jpg", "фотография", "просмотр фото", "camera", 4],
+  [".mp4", "видео", "видеоплеер", "play", 3], [".zip", "архив", "архиватор", "folder", 2], [".exe", "программа", "запускается сама", "gear", 1],
+];
+const seg = document.getElementById("fe-seg"), card = document.getElementById("fe-card");
+seg.innerHTML = EXT.map((e, i) => `<button type="button" data-i="${i}" class="${i ? "" : "on"}">${e[0]}</button>`).join("");
+function apply(i) {
+  const e = EXT[i];
+  card.style.setProperty("--c", `var(--c${e[4]})`);
+  document.getElementById("fe-ic").innerHTML = BB.icon(e[3]);
+  document.getElementById("fe-name").textContent = "отчёт" + e[0];
+  document.getElementById("fe-kind").textContent = e[1];
+  document.getElementById("fe-app").innerHTML = `${BB.icon("arrow-right")} открывает: ${e[2]}`;
+}
+seg.addEventListener("click", ev => {
+  const b = ev.target.closest("button"); if (!b) return;
+  seg.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  card.classList.add("flip");
+  setTimeout(() => { apply(+b.dataset.i); card.classList.remove("flip"); }, 230);
+});
+apply(0);
+</script>

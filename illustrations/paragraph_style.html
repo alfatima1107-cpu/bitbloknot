@@ -1,0 +1,49 @@
+<div class="widget">
+  <div class="stage" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div><div class="small muted">Твой абзац</div><div class="ps-page" id="ps-mine"></div></div>
+    <div><div class="small muted">Образец</div><div class="ps-page" id="ps-goal"></div></div>
+  </div>
+  <div class="controls">
+    <div class="seg" id="ps-al"><button type="button" data-v="left" class="on">по левому</button><button type="button" data-v="center">по центру</button><button type="button" data-v="right">по правому</button><button type="button" data-v="justify">по ширине</button></div>
+    <div class="seg" id="ps-in"><button type="button" data-v="0" class="on">без отступа</button><button type="button" data-v="1">красная строка</button></div>
+    <div class="seg" id="ps-lh"><button type="button" data-v="1.2" class="on">интервал 1</button><button type="button" data-v="1.5">1,5</button><button type="button" data-v="2">2</button></div>
+  </div>
+  <div class="controls"><button class="btn small" type="button" id="ps-new">Новый образец</button></div>
+  <div id="ps-text" class="readout"></div>
+</div>
+<style>
+  .ps-page { background: #fff; color: #1f2937; border-radius: 8px; padding: 12px 14px; font-size: .8rem; min-height: 150px; box-shadow: 0 4px 14px rgb(0 0 0 / .18);
+    transition: all .3s; font-family: Georgia, "Times New Roman", serif; }
+  .ps-page p { margin: 0; transition: all .3s; }
+  @media (max-width: 520px) { .widget .stage[style*="grid"] { grid-template-columns: 1fr !important; } }
+</style>
+<script>
+// Настрой абзац так же, как в образце: выравнивание, красная строка и междустрочный интервал.
+const TXT = "Информатика изучает, как получать, хранить, обрабатывать и передавать информацию. Компьютер помогает делать это быстро и точно.";
+const st = { al: "left", in: "0", lh: "1.2" };
+let goal = null;
+const ALN = { left: "по левому краю", center: "по центру", right: "по правому краю", justify: "по ширине" };
+const render = (el, s) => { el.innerHTML = `<p style="text-align:${s.al};text-indent:${s.in === "1" ? "1.5em" : "0"};line-height:${s.lh}">${TXT}</p>`; };
+function newGoal() {
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  do goal = { al: pick(["left", "center", "right", "justify"]), in: pick(["0", "1"]), lh: pick(["1.2", "1.5", "2"]) };
+  while (goal.al === st.al && goal.in === st.in && goal.lh === st.lh);
+  render(document.getElementById("ps-goal"), goal);
+  check();
+}
+function check() {
+  render(document.getElementById("ps-mine"), st);
+  const diff = [];
+  if (st.al !== goal.al) diff.push("выравнивание");
+  if (st.in !== goal.in) diff.push("красная строка");
+  if (st.lh !== goal.lh) diff.push("интервал");
+  document.getElementById("ps-text").textContent = diff.length ? `Ещё отличается: ${diff.join(", ")}` : `Совпало! Выравнивание ${ALN[goal.al]}, ${goal.in === "1" ? "с красной строкой" : "без отступа"}, интервал ${goal.lh.replace(".", ",").replace("1,2", "1")}.`;
+}
+[["ps-al", "al"], ["ps-in", "in"], ["ps-lh", "lh"]].forEach(([id, key]) => document.getElementById(id).addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle("on", x === b));
+  st[key] = b.dataset.v; check();
+}));
+document.getElementById("ps-new").onclick = newGoal;
+newGoal();
+</script>

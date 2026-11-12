@@ -1,0 +1,45 @@
+<div class="widget">
+  <div class="stage"><div class="sl-slide" id="sl-slide">
+    <div class="sl-box" data-k="title"></div><div class="sl-box" data-k="sub"></div><div class="sl-box" data-k="a"></div><div class="sl-box" data-k="b"></div>
+  </div></div>
+  <div class="controls"><div class="seg" id="sl-seg"></div></div>
+  <div id="sl-text" class="readout"></div>
+</div>
+<style>
+  .sl-slide { position: relative; width: 100%; max-width: 480px; aspect-ratio: 16 / 9; margin: 0 auto; border-radius: 10px; background: #fff; box-shadow: 0 6px 20px rgb(0 0 0 / .2); overflow: hidden; }
+  .sl-box { --c: var(--c1); position: absolute; border: 2px dashed var(--c); border-radius: 8px; background: color-mix(in srgb, var(--c) 14%, #fff);
+    display: grid; place-items: center; color: #334155; font-size: .78rem; font-weight: 600; text-align: center; padding: 4px;
+    transition: left .45s cubic-bezier(.3,1.3,.5,1), top .45s cubic-bezier(.3,1.3,.5,1), width .45s, height .45s, opacity .3s; }
+  .sl-box .icon { width: 26px; height: 26px; }
+</style>
+<script>
+// Макет слайда — расстановка «заготовок»: где заголовок, где текст, где картинка. Выбери макет и смотри, как они переезжают.
+const L = {
+  "Титульный": { title: [10, 25, 80, 28, "Заголовок презентации"], sub: [20, 58, 60, 16, "Подзаголовок: автор, класс"], a: null, b: null, info: "первый слайд: тема, автор, класс" },
+  "Заголовок и объект": { title: [6, 6, 88, 18, "Заголовок слайда"], a: [6, 28, 88, 64, "текст, список или картинка"], sub: null, b: null, info: "основной макет: заголовок и одно содержимое" },
+  "Два объекта": { title: [6, 6, 88, 18, "Заголовок"], a: [6, 28, 42, 64, "текст"], b: [52, 28, 42, 64, "картинка"], sub: null, info: "удобно сравнивать: слева текст, справа картинка" },
+  "Только заголовок": { title: [6, 6, 88, 18, "Заголовок"], sub: null, a: null, b: null, info: "место под свою схему или большой рисунок" },
+  "Пустой": { title: null, sub: null, a: null, b: null, info: "чистый слайд — всё расставляешь сам" },
+};
+const C = { title: 1, sub: 6, a: 2, b: 4 };
+const ICON = { a: "list-check", b: "camera" };
+const seg = document.getElementById("sl-seg"), slide = document.getElementById("sl-slide");
+seg.innerHTML = Object.keys(L).map((n, i) => `<button type="button" class="${i ? "" : "on"}">${n}</button>`).join("");
+function show(name) {
+  const lay = L[name];
+  slide.querySelectorAll(".sl-box").forEach(b => {
+    const key = b.dataset.k, r = lay[key];
+    b.style.setProperty("--c", `var(--c${C[key]})`);
+    if (!r) { b.style.opacity = 0; b.style.width = "0%"; b.style.height = "0%"; return; }
+    Object.assign(b.style, { opacity: 1, left: r[0] + "%", top: r[1] + "%", width: r[2] + "%", height: r[3] + "%" });
+    b.innerHTML = (ICON[key] ? BB.icon(ICON[key]) + "<br>" : "") + r[4];
+  });
+  document.getElementById("sl-text").textContent = `${name}: ${lay.info}`;
+}
+seg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  seg.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  show(b.textContent);
+});
+show("Титульный");
+</script>

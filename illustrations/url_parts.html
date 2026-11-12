@@ -1,0 +1,40 @@
+<div class="widget">
+  <div class="stage">
+    <div class="flow up-row" id="up-row" style="gap:4px"></div>
+    <div id="up-text" class="readout" style="margin-top:12px">Нажми на часть адреса</div>
+  </div>
+  <div class="controls"><div class="seg" id="up-seg"></div></div>
+</div>
+<style>
+  .up-row .tile { font-family: var(--mono); font-size: 1.05rem; padding: 10px 12px; }
+  .up-row .tile.on { transform: translateY(-6px); }
+</style>
+<script>
+// Адрес страницы из цветных кусочков: нажми на кусочек — он поднимется и скажет, что означает.
+const URLS = [
+  [["https", "протокол — правила обмена данными; s значит «защищённо»"], ["://", "разделитель после протокола"], ["zoo.ru", "имя сервера (домен): где лежит сайт"], ["/animals/", "папка на сервере"], ["cat.html", "имя файла — сама страница"]],
+  [["http", "протокол без шифрования: пароли так вводить нельзя"], ["://", "разделитель"], ["school.ru", "имя сервера: сайт школы"], ["/news/", "папка с новостями"], ["day.html", "файл страницы"]],
+  [["https", "защищённый протокол"], ["://", "разделитель"], ["maps.city.ru", "имя сервера: поддомен maps в домене city.ru"], ["/park/", "папка"], ["map.png", "файл-картинка"]],
+];
+const C = [1, 6, 2, 3, 5];
+const row = document.getElementById("up-row"), seg = document.getElementById("up-seg"), text = document.getElementById("up-text");
+seg.innerHTML = URLS.map((u, i) => `<button type="button" data-i="${i}" class="${i ? "" : "on"}">${u.map(p => p[0]).join("")}</button>`).join("");
+let cur = 0;
+function build(i) {
+  cur = i;
+  row.innerHTML = URLS[i].map((p, j) => `<button type="button" class="tile pop" style="--c: var(--c${C[j]}); animation-delay:${j * 0.07}s" data-j="${j}">${p[0]}</button>`).join("");
+  text.textContent = "Нажми на часть адреса";
+}
+row.addEventListener("click", e => {
+  const t = e.target.closest(".tile"); if (!t) return;
+  row.querySelectorAll(".tile").forEach(x => x.classList.toggle("on", x === t));
+  const p = URLS[cur][+t.dataset.j];
+  text.textContent = `${p[0]} — ${p[1]}`;
+});
+seg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  seg.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  build(+b.dataset.i);
+});
+build(0);
+</script>

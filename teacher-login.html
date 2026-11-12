@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru" data-theme="dark" data-accent="blue">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход учителя · БитБлокнот</title>
+  <script>try { var d = document.documentElement; d.dataset.theme = localStorage.getItem("bb-theme") || "dark"; d.dataset.accent = localStorage.getItem("bb-accent") || "blue"; } catch (e) {}</script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237aa7ff' stroke-width='2'%3E%3Cpath d='M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM9 4v16M13 8h2M13 12h2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="topbar"></header>
+  <main class="wrap" id="main">
+    <div class="login">
+      <div class="center" style="margin-bottom:20px">
+        <div class="logo"><i data-icon="notebook"></i> БитБлокнот</div>
+        <div class="muted">Кабинет учителя</div>
+      </div>
+      <div class="tabs" id="mode-tabs" style="justify-content:center">
+        <button class="btn small active" type="button" data-mode="login">Вход</button>
+        <button class="btn small" type="button" data-mode="register">Регистрация</button>
+      </div>
+      <form class="card stack" id="form" novalidate>
+        <div class="field"><label class="muted small" for="email">Почта</label>
+          <input type="email" id="email" autocomplete="email" placeholder="teacher@school.ru" autofocus></div>
+        <div class="field"><label class="muted small" for="password">Пароль <span class="reg-only hidden">(не меньше 6 символов)</span></label>
+          <input type="password" id="password" autocomplete="current-password"></div>
+        <div class="field reg-only hidden"><label class="muted small" for="password2">Повторите пароль</label>
+          <input type="password" id="password2" autocomplete="new-password"></div>
+        <div class="error-text hidden" id="error"></div>
+        <button class="btn primary block" type="submit" id="btn">Войти <i data-icon="arrow-right"></i></button>
+      </form>
+      <p class="center small muted" style="margin-top:14px">Забыли пароль? Напишите автору сайта — он сбросит его в Google Таблице.</p>
+      <div id="demo"></div>
+    </div>
+  </main>
+  <script type="module" src="js/pages/teacher-login.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<div class="widget">
+  <div class="stage">
+    <div class="flow" style="flex-wrap:nowrap;gap:8px">
+      <span class="tile on" style="--c: var(--c6)" id="tt-a"></span>
+      <div class="tt-pipe" id="tt-pipe"></div>
+      <span class="tile on" style="--c: var(--c2)" id="tt-b"></span>
+    </div>
+    <div class="tt-bar"><i id="tt-fill"></i><span id="tt-pct" class="mono">0%</span></div>
+  </div>
+  <div class="controls">
+    <label class="small muted"><span>Объём файла: <b id="tt-v">8</b> Мбайт</span>
+      <input id="tt-size" type="range" min="1" max="64" step="1" value="8">
+    </label>
+    <label class="small muted"><span>Скорость: <b id="tt-s">16</b> Мбит/с</span>
+      <input id="tt-speed" type="range" min="1" max="100" step="1" value="16">
+    </label>
+    <button class="btn primary small" type="button" id="tt-go">Скачать</button>
+  </div>
+  <div id="tt-text" class="readout"></div>
+  <div class="small muted hint">время = объём : скорость. Не забудь: в 1 байте 8 бит.</div>
+</div>
+<style>
+  .tt-pipe { position: relative; flex: 1; height: 36px; border-radius: 18px; background: color-mix(in srgb, var(--line) 50%, transparent); overflow: hidden; }
+  .tt-pipe i { position: absolute; top: 9px; width: 18px; height: 18px; border-radius: 5px; background: var(--c); animation: ttrun linear infinite; }
+  @keyframes ttrun { from { left: -20px; } to { left: 100%; } }
+  .tt-bar { position: relative; height: 26px; margin-top: 14px; border-radius: 13px; background: color-mix(in srgb, var(--line) 50%, transparent); overflow: hidden; }
+  .tt-bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3)); }
+  .tt-bar span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: .85rem; }
+</style>
+<script>
+// Файл скачивается по «трубе»: чем выше скорость, тем быстрее бегут кубики данных.
+const size = document.getElementById("tt-size"), speed = document.getElementById("tt-speed"), text = document.getElementById("tt-text"), pipe = document.getElementById("tt-pipe");
+document.getElementById("tt-a").innerHTML = BB.icon("server") + " сервер";
+document.getElementById("tt-b").innerHTML = BB.icon("laptop") + " ты";
+const fmt = x => (Math.round(x * 100) / 100).toLocaleString("ru-RU");
+function calc() {
+  const V = +size.value, S = +speed.value;
+  document.getElementById("tt-v").textContent = V;
+  document.getElementById("tt-s").textContent = S;
+  const t = V * 8 / S;
+  text.textContent = `${V} Мбайт = ${V * 8} Мбит; ${V * 8} : ${S} = ${fmt(t)} с`;
+  const dur = Math.max(0.5, 3.2 - S / 35);
+  pipe.innerHTML = Array.from({ length: 6 }, (_, i) => `<i style="--c: var(--c${i + 1}); animation-duration:${dur}s; animation-delay:${-i * dur / 6}s"></i>`).join("");
+  return t;
+}
+size.oninput = speed.oninput = calc;
+let raf = 0;
+document.getElementById("tt-go").onclick = () => {
+  const t = calc(), dur = Math.min(6, Math.max(1, t / 4)) * 1000, t0 = performance.now();
+  cancelAnimationFrame(raf);
+  (function f(now) {
+    const k = Math.min(1, (now - t0) / dur);
+    document.getElementById("tt-fill").style.width = k * 100 + "%";
+    document.getElementById("tt-pct").textContent = k < 1 ? `${Math.round(k * 100)}% · ${fmt(t * k)} с` : `готово за ${fmt(t)} с`;
+    if (k < 1 && pipe.isConnected) raf = requestAnimationFrame(f);
+  })(t0);
+};
+calc();
+</script>

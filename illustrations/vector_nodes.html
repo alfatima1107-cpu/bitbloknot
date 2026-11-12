@@ -1,0 +1,64 @@
+<div class="widget">
+  <div class="stage"><svg id="vn-svg" viewBox="0 0 400 260" style="touch-action:none" role="img" aria-label="Векторная фигура с узлами"></svg></div>
+  <div class="controls">
+    <div class="seg" id="vn-seg"><button type="button" data-p="0" class="on">Капля</button><button type="button" data-p="1">Волна</button><button type="button" data-p="2">Лист</button></div>
+    <button class="btn small" type="button" id="vn-zoom">Увеличить в 3 раза</button>
+  </div>
+  <div id="vn-text" class="readout">Тяни за цветные узлы: фигура меняется, но остаётся гладкой</div>
+</div>
+<script>
+// Векторная фигура из узлов и кривых: тяни узлы мышью или пальцем.
+const PRESETS = [
+  [[200, 30], [300, 150], [200, 230], [100, 150]],
+  [[40, 130], [140, 60], [260, 200], [360, 130]],
+  [[200, 30], [330, 120], [200, 230], [70, 120]],
+];
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("vn-svg"), text = document.getElementById("vn-text");
+let pts = [], closed = true, zoom = 1, drag = -1;
+const path = document.createElementNS(NS, "path");
+path.setAttribute("fill", "color-mix(in srgb, var(--c6) 35%, transparent)");
+path.setAttribute("stroke", "var(--c6)"); path.setAttribute("stroke-width", 4); path.setAttribute("stroke-linejoin", "round");
+const g = document.createElementNS(NS, "g"); svg.appendChild(g); g.appendChild(path);
+const handles = document.createElementNS(NS, "g"); g.appendChild(handles);
+function d() {
+  // сглаженная кривая через узлы (Catmull-Rom → кривые Безье)
+  const n = pts.length, P = i => pts[closed ? (i + n) % n : Math.max(0, Math.min(n - 1, i))];
+  let s = `M${pts[0][0]} ${pts[0][1]}`;
+  const last = closed ? n : n - 1;
+  for (let i = 0; i < last; i++) {
+    const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2);
+    s += ` C${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]} ${p2[1]}`;
+  }
+  return s + (closed ? "Z" : "");
+}
+function draw() {
+  path.setAttribute("d", d());
+  path.setAttribute("fill", closed ? "color-mix(in srgb, var(--c6) 35%, transparent)" : "none");
+  handles.innerHTML = pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="${11 / zoom}" fill="var(--c${(i % 5) + 1})" stroke="var(--card)" stroke-width="${3 / zoom}" data-i="${i}" style="cursor:grab"/>`).join("");
+  g.setAttribute("transform", zoom === 1 ? "" : `translate(200 130) scale(${zoom}) translate(${-pts[0][0]} ${-pts[0][1]})`);
+}
+function load(i) { pts = PRESETS[i].map(p => [...p]); closed = i !== 1; zoom = 1; document.getElementById("vn-zoom").textContent = "Увеличить в 3 раза"; draw(); }
+function toSvg(e) { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(g.getScreenCTM().inverse()); }
+svg.addEventListener("pointerdown", e => { const c = e.target.closest("circle"); if (!c) return; drag = +c.dataset.i; svg.setPointerCapture(e.pointerId); });
+svg.addEventListener("pointermove", e => {
+  if (drag < 0) return;
+  const p = toSvg(e);
+  pts[drag] = [Math.max(10, Math.min(390, p.x)), Math.max(10, Math.min(250, p.y))];
+  draw();
+  text.textContent = `Узел ${drag + 1}: x = ${Math.round(pts[drag][0])}, y = ${Math.round(pts[drag][1])}. В файле хранятся только координаты ${pts.length} узлов.`;
+});
+svg.addEventListener("pointerup", () => { drag = -1; });
+document.getElementById("vn-seg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll("#vn-seg button").forEach(x => x.classList.toggle("on", x === b));
+  load(+b.dataset.p);
+});
+document.getElementById("vn-zoom").onclick = () => {
+  zoom = zoom === 1 ? 3 : 1;
+  document.getElementById("vn-zoom").textContent = zoom === 1 ? "Увеличить в 3 раза" : "Вернуть масштаб";
+  text.textContent = zoom === 1 ? "Тяни за цветные узлы" : "Увеличили в 3 раза — край всё равно гладкий: кривая пересчитана по узлам.";
+  draw();
+};
+load(0);
+</script>

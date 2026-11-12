@@ -1,0 +1,68 @@
+<div class="widget">
+  <div id="rv-scene"></div>
+  <div class="controls">
+    <label class="small muted"><span>Увеличение: <b id="rv-zv">1</b>×</span>
+      <input id="rv-z" type="range" min="1" max="8" step="0.1" value="1">
+    </label>
+  </div>
+  <div class="flow small"><span class="chip" style="--c: var(--c4)">слева — растр: звезда из клеток-пикселей</span><span class="chip" style="--c: var(--c1)">справа — вектор: звезда по формуле</span></div>
+  <div id="rv-text" class="readout"></div>
+</div>
+<script>
+// Одна и та же звезда в растре и в векторе. Увеличиваем — растровая становится «лесенкой», векторная остаётся гладкой.
+const zr = document.getElementById("rv-z"), text = document.getElementById("rv-text");
+function say() {
+  const z = +zr.value;
+  document.getElementById("rv-zv").textContent = z.toFixed(1).replace(".", ",");
+  text.textContent = z < 2 ? "Пока обе звезды выглядят одинаково. Двигай ползунок." : "Растр: видны квадратики-пиксели. Вектор: компьютер заново рисует фигуру по формуле, края гладкие.";
+}
+zr.addEventListener("input", say); say();
+BB.three(document.getElementById("rv-scene"), { height: 300, camera: [0, 0, 14], fit: [11, 6.8], fov: 34 }).then(k => {
+  if (!k) return;
+  const { THREE, scene } = k;
+  // форма звезды
+  const star = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.9 : 2.1;
+    i ? star.lineTo(Math.cos(a) * r, Math.sin(a) * r) : star.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  star.closePath();
+  const left = new THREE.Group(), right = new THREE.Group();
+  left.position.x = -2.7; right.position.x = 2.7;
+  scene.add(left, right);
+  // вектор: гладкая объёмная звезда
+  const vec = new THREE.Mesh(new THREE.ExtrudeGeometry(star, { depth: 0.5, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06, bevelSegments: 4 }),
+    new THREE.MeshStandardMaterial({ color: 0x60a5fa, roughness: 0.35, metalness: 0.1, clippingPlanes: [new THREE.Plane(new THREE.Vector3(1, 0, 0), -0.08)] }));
+  vec.position.z = -0.25; right.add(vec);
+  // растр: та же звезда из кубиков-пикселей 44 × 44
+  const N = 44, cell = 4.4 / N, pts = star.getPoints(40);
+  const inside = (x, y) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const a = pts[i], b = pts[j]; if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; };
+  const cubes = [];
+  for (let gy = 0; gy < N; gy++) for (let gx = 0; gx < N; gx++) {
+    const x = -2.2 + cell * (gx + 0.5), y = -2.2 + cell * (gy + 0.5);
+    if (inside(x, y)) cubes.push([x, y]);
+  }
+  const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(cell * 0.92, cell * 0.92, 0.5), new THREE.MeshStandardMaterial({ roughness: 0.5, clippingPlanes: [new THREE.Plane(new THREE.Vector3(-1, 0, 0), -0.08)] }), cubes.length);
+  k.renderer.localClippingEnabled = true;   // левая половина кадра — только растр, правая — только вектор
+  scene.add(k.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 20, 0.1), k.mat("line", { basic: true })), 0, 0, 1));
+  const m4 = new THREE.Matrix4(), col = new THREE.Color();
+  cubes.forEach(([x, y], i) => {
+    m4.makeTranslation(x, y, 0); inst.setMatrixAt(i, m4);
+    col.setHSL(0.08 - (y + 2.2) / 4.4 * 0.12 + 1, 0.9, 0.55); inst.setColorAt(i, col);
+  });
+  left.add(inst);
+  const lz = k.label("растр", { size: 0.42, bold: true }); lz.position.set(-2.7, -3.0, 0); scene.add(lz);
+  const rz = k.label("вектор", { size: 0.42, bold: true }); rz.position.set(2.7, -3.0, 0); scene.add(rz);
+  k.onFrame((dt, t) => {
+    const z = +zr.value;
+    // увеличение: смотрим на верхний луч звезды крупным планом
+    const s = z;
+    left.scale.setScalar(s); right.scale.setScalar(s);
+    // при увеличении сдвигаем звёзды вниз, чтобы в кадре был верхний луч
+    left.position.set(-2.7, -(s - 1) * 2.05, 0);
+    right.position.set(2.7, -(s - 1) * 2.05, 0);
+    const sway = k.reduced ? 0 : Math.sin(t * 0.8) * 0.35;
+    left.rotation.y = sway; right.rotation.y = sway;
+  });
+});
+</script>

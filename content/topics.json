@@ -1,14 +1,14 @@
 [
   {"num": 1,  "section": 1, "title": "Компьютер и его устройства", "short": "Устройства", "prereq": [],  "trainer": "computer", "generator": null},
   {"num": 2,  "section": 1, "title": "Программы, данные и файлы",  "short": "Файлы и пути", "prereq": [1], "trainer": "files", "generator": "files"},
-  {"num": 3,  "section": 1, "title": "Компьютерные сети и интернет", "short": "Сети", "prereq": [],  "trainer": null, "generator": null},
-  {"num": 4,  "section": 2, "title": "Информация и информационные процессы", "short": "Информация", "prereq": [],  "trainer": null, "generator": null},
+  {"num": 3,  "section": 1, "title": "Компьютерные сети и интернет", "short": "Сети", "prereq": [],  "trainer": "network", "generator": null},
+  {"num": 4,  "section": 2, "title": "Информация и информационные процессы", "short": "Информация", "prereq": [],  "trainer": "information", "generator": null},
   {"num": 5,  "section": 2, "title": "Алфавит и двоичный код", "short": "Двоичный код", "prereq": [4], "trainer": "alphabet", "generator": "alphabet"},
   {"num": 6,  "section": 2, "title": "Единицы измерения информации", "short": "Единицы", "prereq": [5], "trainer": "units", "generator": "units"},
   {"num": 7,  "section": 2, "title": "Кодирование текста", "short": "Текст", "prereq": [6], "trainer": "text", "generator": "text"},
   {"num": 8,  "section": 2, "title": "Кодирование изображений", "short": "Изображения", "prereq": [6], "trainer": "image", "generator": "image"},
   {"num": 9,  "section": 2, "title": "Кодирование звука", "short": "Звук", "prereq": [6], "trainer": "sound", "generator": "sound"},
-  {"num": 10, "section": 3, "title": "Текстовые документы", "short": "Документы", "prereq": [7], "trainer": null, "generator": null},
-  {"num": 11, "section": 3, "title": "Компьютерная графика", "short": "Графика", "prereq": [8], "trainer": null, "generator": null},
-  {"num": 12, "section": 3, "title": "Мультимедийные презентации", "short": "Презентации", "prereq": [], "trainer": null, "generator": null}
+  {"num": 10, "section": 3, "title": "Текстовые документы", "short": "Документы", "prereq": [7], "trainer": "documents", "generator": null},
+  {"num": 11, "section": 3, "title": "Компьютерная графика", "short": "Графика", "prereq": [8], "trainer": "graphics", "generator": null},
+  {"num": 12, "section": 3, "title": "Мультимедийные презентации", "short": "Презентации", "prereq": [], "trainer": "presentations", "generator": null}
 ]

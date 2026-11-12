@@ -1,0 +1,113 @@
+<div class="seg" id="gr-tabs" style="margin-bottom:12px">
+  <button type="button" data-t="quiz" class="on">Растр или вектор?</button>
+  <button type="button" data-t="paint">Рисуем по клеткам</button>
+</div>
+
+<div data-gr="quiz">
+  <p class="muted small">Для каждой картинки выбери, в каком виде её лучше хранить. Нужно не меньше 5 из 6.</p>
+  <div class="stage" style="text-align:center">
+    <div class="tile on floaty" id="gr-item" style="--c: var(--c6);font-size:1.1rem;padding:14px 20px"></div>
+    <div class="small muted" id="gr-n" style="margin:8px 0"></div>
+    <div class="row" style="justify-content:center;gap:10px">
+      <button type="button" class="tile" style="--c: var(--c4)" data-a="r">${r}</button>
+      <button type="button" class="tile" style="--c: var(--c1)" data-a="v">${v}</button>
+    </div>
+  </div>
+</div>
+
+<div data-gr="paint" class="hidden">
+  <p class="muted small">Повтори рисунок по клеткам. Выбери цвет и нажимай на клетки (можно водить, зажав кнопку).</p>
+  <div class="stage gr-paint">
+    <div><div class="small muted">Образец</div><div class="gr-grid" id="gr-goal"></div></div>
+    <div><div class="small muted">Твой рисунок</div><div class="gr-grid" id="gr-mine" style="touch-action:none"></div></div>
+  </div>
+  <div class="row" style="margin-top:8px;justify-content:center" id="gr-pal"></div>
+  <div class="center small muted" id="gr-info" style="margin-top:6px"></div>
+</div>
+<div class="feedback hidden" id="gr-fb"></div>
+<style>
+  .gr-paint { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+  .gr-grid { display: grid; grid-template-columns: repeat(10, 22px); gap: 2px; }
+  .gr-grid i { width: 22px; height: 22px; border-radius: 3px; background: color-mix(in srgb, var(--line) 50%, transparent); }
+  #gr-mine i { cursor: pointer; }
+  .gr-sw { width: 30px; height: 30px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+  .gr-sw.on { border-color: var(--tx); transform: scale(1.15); }
+</style>
+<script>
+const $ = id => document.getElementById(id);
+$("gr-tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  $("gr-tabs").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll("[data-gr]").forEach(p => p.classList.toggle("hidden", p.dataset.gr !== b.dataset.t));
+  $("gr-fb").className = "feedback hidden";
+});
+// ---------- растр или вектор ----------
+document.querySelector('[data-a="r"]').innerHTML = BB.icon("camera") + " растр";
+document.querySelector('[data-a="v"]').innerHTML = BB.icon("compass") + " вектор";
+const ITEMS = [
+  ["Фотография с прогулки", "r", "в фото миллионы оттенков — это растр"], ["Логотип школы для баннера", "v", "логотип увеличивают до любых размеров — вектор"],
+  ["Схема метро", "v", "линии и кружки — удобно хранить векторно"], ["Скан старого письма", "r", "сканер выдаёт растр из точек"],
+  ["Значок на кнопке сайта", "v", "значки рисуют вектором, чтобы были чёткими на любом экране"], ["Портрет, нарисованный кистью в редакторе", "r", "мазки кистью — это пиксели"],
+  ["Чертёж детали", "v", "чертёж — точные линии и размеры"], ["Снимок экрана", "r", "скриншот — это пиксели экрана"],
+  ["Карта для печати на плакате", "v", "плакат большой — векторная карта не размоется"], ["Кадр из видео", "r", "видео — это растровые кадры"],
+];
+let q = [], qi = 0, score = 0;
+function startQuiz() { q = [...ITEMS].sort(() => Math.random() - 0.5).slice(0, 6); qi = 0; score = 0; showQ(); }
+function showQ() {
+  const it = q[qi];
+  $("gr-item").textContent = it[0];
+  $("gr-item").classList.remove("pop"); void $("gr-item").offsetWidth; $("gr-item").classList.add("pop");
+  $("gr-n").textContent = `картинка ${qi + 1} из 6 · верно: ${score}`;
+}
+document.querySelectorAll("[data-a]").forEach(b => b.addEventListener("click", () => {
+  if (qi >= q.length) return;
+  const it = q[qi], ok = b.dataset.a === it[1];
+  if (ok) score++;
+  BB.feedback($("gr-fb"), ok ? "ok" : "bad", `${ok ? "Верно" : "Не совсем"}: ${it[2]}.`);
+  qi++;
+  if (qi < q.length) { setTimeout(showQ, 300); return; }
+  if (score >= 5) { BB.feedback($("gr-fb"), "ok", `<div class="fh">${score} из 6 — отлично!</div>Растр — для фото и сканов, вектор — для логотипов, схем и чертежей.`); BB.trainerDone(); }
+  else BB.feedback($("gr-fb"), "warn", `<div class="fh">${score} из 6</div>Нужно хотя бы 5. <button class="btn small" id="gr-again">Ещё раз</button>`);
+  $("gr-n").textContent = `верно: ${score} из 6`;
+  setTimeout(() => { const a = $("gr-again"); if (a) a.onclick = startQuiz; }, 0);
+}));
+startQuiz();
+// ---------- рисуем по клеткам ----------
+const PAL = ["transparent", "var(--c5)", "var(--c3)", "var(--c1)", "var(--c2)"];
+const PICS = [
+  "0000000000011001100011111111001111111100111111110001111110000011110000000110000000000000000000000000",
+  "0000330000000333000000030000004444444000044444400004222400000422240000044444400000000000000000000000",
+];
+let pic = 0, color = 1, mine = [], down = false;
+function grid(el, data, edit) { el.innerHTML = data.map((c, i) => `<i data-i="${i}" style="${+c ? `background:${PAL[c]}` : ""}"></i>`).join(""); }
+function info() {
+  const used = new Set(mine.filter(c => c > 0)).size + 1;
+  const i = Math.ceil(Math.log2(Math.max(2, used)));
+  $("gr-info").textContent = `100 пикселей, цветов вместе с фоном: ${used} → ${i} бит на пиксель → ${100 * i} бит`;
+}
+function loadPic() {
+  mine = Array(100).fill(0);
+  grid($("gr-goal"), PICS[pic].split(""));
+  grid($("gr-mine"), mine);
+  info();
+}
+$("gr-pal").innerHTML = PAL.map((c, i) => `<span class="gr-sw ${i === color ? "on" : ""}" data-c="${i}" style="background:${i ? c : "color-mix(in srgb, var(--line) 50%, transparent)"}" title="${i ? "цвет" : "ластик"}"></span>`).join("") +
+  ` <button class="btn small" type="button" id="gr-next">Другой рисунок</button>`;
+$("gr-pal").addEventListener("click", e => {
+  const s = e.target.closest("[data-c]"); if (!s) return;
+  color = +s.dataset.c;
+  $("gr-pal").querySelectorAll(".gr-sw").forEach(x => x.classList.toggle("on", x === s));
+});
+$("gr-next").onclick = () => { pic = (pic + 1) % PICS.length; loadPic(); };
+function paint(e) {
+  const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest("#gr-mine i"); if (!cell) return;
+  const i = +cell.dataset.i; mine[i] = color;
+  cell.style.background = color ? PAL[color] : "";
+  info();
+  if (mine.join("") === PICS[pic]) BB.feedback($("gr-fb"), "ok", `<div class="fh">Точно как в образце!</div>Растровый рисунок — это просто таблица цветов пикселей.`);
+}
+$("gr-mine").addEventListener("pointerdown", e => { down = true; $("gr-mine").setPointerCapture(e.pointerId); paint(e); });
+$("gr-mine").addEventListener("pointermove", e => { if (down) paint(e); });
+$("gr-mine").addEventListener("pointerup", () => { down = false; });
+loadPic();
+</script>

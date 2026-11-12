@@ -1,0 +1,69 @@
+<p class="muted small">Оформи документ как в образце: нажми на абзац слева, потом на кнопки оформления. Сравнивается оформление, а не текст.</p>
+<div class="dc-bar" id="dc-bar">
+  <button type="button" class="tile" style="--c: var(--c1)" data-f="head">Заголовок</button>
+  <button type="button" class="tile" style="--c: var(--c4)" data-f="bold"><b>Ж</b> жирный</button>
+  <button type="button" class="tile" style="--c: var(--c5)" data-f="italic"><i>К</i> курсив</button>
+  <button type="button" class="tile" style="--c: var(--c2)" data-f="center">по центру</button>
+  <button type="button" class="tile" style="--c: var(--c6)" data-f="list">список</button>
+</div>
+<div class="dc-wrap">
+  <div><div class="small muted">Твой документ</div><div class="dc-page" id="dc-mine"></div></div>
+  <div><div class="small muted">Образец</div><div class="dc-page" id="dc-goal"></div></div>
+</div>
+<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="dc-check">Сравнить с образцом</button><button class="btn" type="button" id="dc-new">Другой образец</button></div>
+<div class="feedback hidden" id="dc-fb"></div>
+<style>
+  .dc-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .dc-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dc-page { background: #fff; color: #1f2937; border-radius: 8px; padding: 14px; min-height: 230px; font-family: Georgia, "Times New Roman", serif; font-size: .85rem; box-shadow: 0 4px 14px rgb(0 0 0 / .18); }
+  .dc-page .blk { padding: 3px 6px; margin: 2px 0; border-radius: 6px; border: 2px solid transparent; transition: all .2s; }
+  #dc-mine .blk { cursor: pointer; } #dc-mine .blk:hover { border-color: #cbd5e1; }
+  #dc-mine .blk.sel { border-color: var(--ac); background: color-mix(in srgb, var(--ac) 10%, #fff); }
+  .dc-page .blk.bad { border-color: var(--err); }
+  .blk.head { font-size: 1.35em; font-weight: 700; } .blk.bold { font-weight: 700; } .blk.italic { font-style: italic; } .blk.center { text-align: center; }
+  .blk.list { padding-left: 22px; position: relative; } .blk.list::before { content: ""; position: absolute; left: 10px; top: .75em; width: 6px; height: 6px; border-radius: 50%; background: #1f2937; }
+  @media (max-width: 560px) { .dc-wrap { grid-template-columns: 1fr; } }
+</style>
+<script>
+// Мини-редактор: у каждого абзаца набор свойств (заголовок, жирный, курсив, по центру, список). Нужно повторить образец.
+const $ = id => document.getElementById(id);
+const DOCS = [
+  { text: ["Мой питомец", "У меня живёт кот Байт.", "Он любит:", "спать на клавиатуре", "гонять курсор мыши", "Кот — лучший друг программиста."],
+    goal: [["head", "center"], [], ["bold"], ["list"], ["list"], ["italic"]] },
+  { text: ["Правила работы за компьютером", "Соблюдай простые правила:", "держи спину прямо", "делай перерыв каждые 30 минут", "не ешь у клавиатуры", "Береги глаза!"],
+    goal: [["head", "center"], ["bold"], ["list"], ["list"], ["list"], ["bold", "center"]] },
+  { text: ["Доклад о байте", "Байт — это 8 бит.", "Важные факты:", "1 Кбайт = 1024 байта", "1 Мбайт = 1024 Кбайт", "Автор: ученик 7 класса"],
+    goal: [["head"], ["italic"], ["bold"], ["list"], ["list"], ["italic", "center"]] },
+];
+let doc = null, mine = [], sel = 0, di = -1;
+function render(el, fmt, interactive) {
+  el.innerHTML = doc.text.map((t, i) => `<div class="blk ${fmt[i].join(" ")} ${interactive && i === sel ? "sel" : ""}" data-i="${i}">${t}</div>`).join("");
+}
+function load() {
+  di = (di + 1) % DOCS.length; doc = DOCS[di];
+  mine = doc.text.map(() => []); sel = 0;
+  render($("dc-goal"), doc.goal, false); draw();
+  $("dc-fb").className = "feedback hidden";
+}
+function draw() {
+  render($("dc-mine"), mine, true);
+  $("dc-bar").querySelectorAll("[data-f]").forEach(b => b.classList.toggle("on", mine[sel].includes(b.dataset.f)));
+}
+$("dc-mine").addEventListener("click", e => { const b = e.target.closest(".blk"); if (b) { sel = +b.dataset.i; draw(); } });
+$("dc-bar").addEventListener("click", e => {
+  const b = e.target.closest("[data-f]"); if (!b) return;
+  const f = b.dataset.f, cur = mine[sel];
+  mine[sel] = cur.includes(f) ? cur.filter(x => x !== f) : [...cur, f];
+  draw();
+});
+$("dc-check").onclick = () => {
+  const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+  const bad = doc.goal.map((g, i) => same(g, mine[i]) ? -1 : i).filter(i => i >= 0);
+  draw();
+  bad.forEach(i => $("dc-mine").querySelector(`[data-i="${i}"]`).classList.add("bad"));
+  if (!bad.length) { BB.feedback($("dc-fb"), "ok", `<div class="fh">Документ совпадает с образцом!</div>Заголовок, выделение, выравнивание и списки делают текст понятным.`); BB.trainerDone(); }
+  else BB.feedback($("dc-fb"), "bad", `Отличаются абзацы: ${bad.map(i => i + 1).join(", ")} (обведены красным).`);
+};
+$("dc-new").onclick = load;
+load();
+</script>

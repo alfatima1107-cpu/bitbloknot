@@ -1,0 +1,169 @@
+<div class="tabs" id="un-tabs">
+  <button class="btn small active" data-tab="ladder">Лестница единиц</button>
+  <button class="btn small" data-tab="bigger">Что больше?</button>
+  <button class="btn small" data-tab="sort">Расставь по возрастанию</button>
+</div>
+
+<div data-upane="ladder">
+  <p class="muted small">Введи число и выбери единицы — лестница покажет путь перевода по шагам. Вниз по лестнице (к мелким единицам) — умножаем, вверх — делим.</p>
+  <div class="row">
+    <input type="text" id="ld-v" value="3" inputmode="decimal" style="width:110px">
+    <select id="ld-from"></select>
+    <span class="muted">→</span>
+    <select id="ld-to"></select>
+  </div>
+  <div class="ladder" id="ld-ladder"></div>
+  <div class="stat"><div class="k">Решение</div><ol id="ld-steps" style="margin:6px 0 0;padding-left:1.3em"></ol></div>
+</div>
+
+<div data-upane="bigger" class="hidden">
+  <p class="muted small">Нажми на большее количество информации (или «Равны»). 5 вопросов — постарайся ответить хотя бы на 4.</p>
+  <div class="row" style="justify-content:center;margin:14px 0">
+    <button class="choice big-choice" id="bg-a"></button>
+    <button class="choice" id="bg-eq">Равны</button>
+    <button class="choice big-choice" id="bg-b"></button>
+  </div>
+  <div class="center small muted" id="bg-score"></div>
+  <div class="feedback hidden" id="bg-fb"></div>
+  <div class="center" style="margin-top:8px"><button class="btn hidden" id="bg-again"><i data-icon="refresh"></i> Ещё раз</button></div>
+</div>
+
+<div data-upane="sort" class="hidden">
+  <p class="muted small">Перетащи карточки (или двигай стрелками), чтобы они шли от меньшего к большему.</p>
+  <div id="so-list" class="so-list"></div>
+  <div class="row" style="margin-top:10px"><button class="btn primary" id="so-check"><i data-icon="check"></i> Проверить</button><button class="btn" id="so-new"><i data-icon="dice"></i> Другие карточки</button></div>
+  <div class="feedback hidden" id="so-fb"></div>
+</div>
+
+<style>
+  #un-tabs .btn.active { border-color: var(--ac); color: var(--acs); background: var(--acb); }
+  .ladder { display: flex; gap: 0; margin: 16px 0; align-items: flex-end; overflow-x: auto; padding-bottom: 4px; }
+  .ladder .u { flex: 1; min-width: 90px; text-align: center; }
+  .ladder .u .box { border: 1px solid var(--line); background: var(--card-2); border-radius: 6px; padding: 8px 4px; font-weight: 600; }
+  .ladder .u.on .box { border-color: var(--ac); background: var(--acb); color: var(--acs); }
+  .ladder .u.end .box { border-color: var(--ok); background: var(--okb); color: var(--ok); }
+  .ladder .u .val { font-family: var(--mono); font-size: .8rem; color: var(--mut); min-height: 1.3em; margin-top: 4px; word-break: break-all; }
+  .ladder .step { min-width: 46px; text-align: center; font-family: var(--mono); font-size: .8rem; color: var(--mut); padding-bottom: 30px; }
+  .ladder .step.on { color: var(--wr); font-weight: 700; }
+  .big-choice { min-width: 140px; justify-content: center; font-size: 1.1rem; padding: 14px 18px; }
+  .so-list { display: flex; flex-direction: column; gap: 6px; max-width: 360px; }
+  .so-item { display: flex; justify-content: space-between; align-items: center; background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; cursor: grab; font-family: var(--mono); }
+  .so-item.dragging { opacity: .4; }
+  .so-item.ok { border-color: var(--ok); } .so-item.bad { border-color: var(--err); }
+  .so-item button { padding: 2px 8px; }
+</style>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const U = ["бит", "байт", "Кбайт", "Мбайт", "Гбайт"], STEP = [null, 8, 1024, 1024, 1024];
+  const inBits = u => { const i = U.indexOf(u); return i === 0 ? 1 : 8 * 1024 ** (i - 1); };
+  const f = v => (Math.round(v * 1e6) / 1e6).toLocaleString("ru-RU", { maximumFractionDigits: 6 });
+
+  document.querySelectorAll("#un-tabs [data-tab]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#un-tabs [data-tab]").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll("[data-upane]").forEach(p => p.classList.toggle("hidden", p.dataset.upane !== b.dataset.tab));
+  }));
+
+  // ---------- лестница ----------
+  U.forEach((u, i) => { $("ld-from").add(new Option(u, u, i === 2, i === 2)); $("ld-to").add(new Option(u, u, i === 0, i === 0)); });
+  let ladderUses = 0;
+  function ladder(e) {
+    const v = Number($("ld-v").value.replace(/\s/g, "").replace(",", "."));
+    const a = U.indexOf($("ld-from").value), b = U.indexOf($("ld-to").value);
+    const vals = Array(5).fill(""), onSteps = new Set();
+    const steps = [];
+    if (!isFinite(v) || $("ld-v").value.trim() === "") { $("ld-steps").innerHTML = "<li>Введи число</li>"; }
+    else {
+      let cur = v; vals[a] = f(v);
+      if (a > b) for (let i = a; i > b; i--) { const nv = cur * STEP[i]; steps.push(`${f(cur)} ${U[i]} × ${STEP[i]} = ${f(nv)} ${U[i - 1]}`); cur = nv; vals[i - 1] = f(nv); onSteps.add(i); }
+      else for (let i = a + 1; i <= b; i++) { const nv = cur / STEP[i]; steps.push(`${f(cur)} ${U[i - 1]} : ${STEP[i]} = ${f(nv)} ${U[i]}`); cur = nv; vals[i] = f(nv); onSteps.add(i); }
+      $("ld-steps").innerHTML = steps.length ? steps.map(s => `<li>${s}</li>`).join("") : "<li>Единицы совпадают — переводить не нужно</li>";
+      if (e && steps.length >= 2 && ++ladderUses >= 3) BB.trainerDone();
+    }
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    let html = "";
+    U.forEach((u, i) => {
+      if (i > 0) html += `<div class="step ${onSteps.has(i) ? "on" : ""}">${a > b ? "×" : ":"}${STEP[i]}<br>${a > b ? "←" : "→"}</div>`;
+      html += `<div class="u ${i === b ? "end" : i >= lo && i <= hi ? "on" : ""}"><div class="box">${u}</div><div class="val">${vals[i]}</div></div>`;
+    });
+    $("ld-ladder").innerHTML = html;
+  }
+  ["ld-v", "ld-from", "ld-to"].forEach(id => $(id).addEventListener("input", ladder));
+  ladder();
+
+  // ---------- что больше ----------
+  const PAIRS = [
+    [[2, "Кбайт"], [16000, "бит"]], [[1, "байт"], [8, "бит"]], [[1, "Мбайт"], [1000, "Кбайт"]],
+    [[3, "байт"], [20, "бит"]], [[2048, "байт"], [2, "Кбайт"]], [[1, "Гбайт"], [1000, "Мбайт"]],
+    [[512, "Кбайт"], [1, "Мбайт"]], [[64, "бит"], [8, "байт"]], [[10, "байт"], [100, "бит"]],
+    [[4, "Кбайт"], [32768, "бит"]], [[1500, "байт"], [1, "Кбайт"]], [[3, "Мбайт"], [3072, "Кбайт"]],
+  ];
+  let round = 0, score = 0, cur;
+  function bgNext() {
+    $("bg-again").classList.add("hidden");
+    if (round >= 5) {
+      $("bg-score").textContent = `Итог: ${score} из 5`;
+      if (score >= 4) { BB.feedback($("bg-fb"), "ok", `<div class="fh">Отлично! ${score} из 5</div>Ты уверенно сравниваешь единицы информации.`); BB.trainerDone(); }
+      else BB.feedback($("bg-fb"), "warn", `<div class="fh">${score} из 5</div>Попробуй ещё раз. Подсказка: переведи оба значения в одни единицы.`);
+      $("bg-again").classList.remove("hidden");
+      ["bg-a", "bg-b", "bg-eq"].forEach(id => $(id).disabled = true);
+      return;
+    }
+    cur = PAIRS[Math.floor(Math.random() * PAIRS.length)];
+    if (Math.random() < 0.5) cur = [cur[1], cur[0]];
+    $("bg-a").textContent = `${f(cur[0][0])} ${cur[0][1]}`; $("bg-b").textContent = `${f(cur[1][0])} ${cur[1][1]}`;
+    ["bg-a", "bg-b", "bg-eq"].forEach(id => { $(id).disabled = false; $(id).classList.remove("right", "wrong"); });
+    $("bg-score").textContent = `Вопрос ${round + 1} из 5 · верно: ${score}`;
+  }
+  function bgPick(which) {
+    const A = cur[0][0] * inBits(cur[0][1]), B = cur[1][0] * inBits(cur[1][1]);
+    const right = A > B ? "a" : B > A ? "b" : "eq";
+    const ok = which === right;
+    score += ok; round++;
+    $("bg-" + which).classList.add(ok ? "right" : "wrong"); $("bg-" + right).classList.add("right");
+    BB.feedback($("bg-fb"), ok ? "ok" : "bad", `${ok ? "Верно!" : "Не так."} ${f(cur[0][0])} ${cur[0][1]} = ${f(A)} бит, ${f(cur[1][0])} ${cur[1][1]} = ${f(B)} бит.`);
+    ["bg-a", "bg-b", "bg-eq"].forEach(id => $(id).disabled = true);
+    setTimeout(bgNext, 1600);
+  }
+  $("bg-a").addEventListener("click", () => bgPick("a")); $("bg-b").addEventListener("click", () => bgPick("b")); $("bg-eq").addEventListener("click", () => bgPick("eq"));
+  $("bg-again").addEventListener("click", () => { round = 0; score = 0; $("bg-fb").className = "feedback hidden"; bgNext(); });
+  bgNext();
+
+  // ---------- сортировка ----------
+  const SETS = [
+    [[1, "Кбайт"], [1000, "байт"], [9000, "бит"], [1, "Мбайт"]],
+    [[16, "бит"], [3, "байт"], [1, "Кбайт"], [1025, "байт"]],
+    [[2, "Мбайт"], [2000, "Кбайт"], [1, "Гбайт"], [3, "Мбайт"]],
+    [[100, "бит"], [10, "байт"], [13, "байт"], [1, "Кбайт"]],
+  ];
+  let items = [];
+  function soRender() {
+    const list = $("so-list"); list.innerHTML = "";
+    items.forEach((it, k) => {
+      const d = document.createElement("div"); d.className = "so-item"; d.draggable = true; d.dataset.k = k;
+      d.innerHTML = `<span>${f(it[0])} ${it[1]}</span><span><button class="btn small ghost" data-up>↑</button><button class="btn small ghost" data-down>↓</button></span>`;
+      d.querySelector("[data-up]").onclick = () => { if (k > 0) { [items[k - 1], items[k]] = [items[k], items[k - 1]]; soRender(); } };
+      d.querySelector("[data-down]").onclick = () => { if (k < items.length - 1) { [items[k + 1], items[k]] = [items[k], items[k + 1]]; soRender(); } };
+      d.addEventListener("dragstart", e => { d.classList.add("dragging"); e.dataTransfer.setData("text/plain", k); });
+      d.addEventListener("dragend", () => d.classList.remove("dragging"));
+      d.addEventListener("dragover", e => e.preventDefault());
+      d.addEventListener("drop", e => { e.preventDefault(); const from = +e.dataTransfer.getData("text/plain"); const [m] = items.splice(from, 1); items.splice(k, 0, m); soRender(); });
+      list.appendChild(d);
+    });
+    $("so-fb").className = "feedback hidden";
+  }
+  function soNew() { items = [...SETS[Math.floor(Math.random() * SETS.length)]].sort(() => Math.random() - 0.5); soRender(); }
+  $("so-new").addEventListener("click", soNew);
+  $("so-check").addEventListener("click", () => {
+    const bitsArr = items.map(it => it[0] * inBits(it[1]));
+    const sorted = [...bitsArr].sort((a, b) => a - b);
+    const els = [...$("so-list").children];
+    let ok = true;
+    bitsArr.forEach((b, k) => { const good = b === sorted[k]; els[k].classList.toggle("ok", good); els[k].classList.toggle("bad", !good); ok = ok && good; });
+    if (ok) { BB.feedback($("so-fb"), "ok", "<div class='fh'>Верно!</div>" + items.map((it, k) => `${f(it[0])} ${it[1]} = ${f(bitsArr[k])} бит`).join("<br>")); BB.trainerDone(); }
+    else BB.feedback($("so-fb"), "bad", "Красные карточки стоят не на своих местах. Переведи всё в биты или байты и сравни.");
+  });
+  soNew();
+})();
+</script>

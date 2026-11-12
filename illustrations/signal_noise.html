@@ -1,0 +1,74 @@
+<div class="widget">
+  <div class="stage">
+    <div class="sn-line">
+      <span class="tile on" style="--c: var(--c1)"></span>
+      <div class="sn-wire" id="sn-wire"></div>
+      <span class="tile on" style="--c: var(--c2)"></span>
+    </div>
+    <div class="flow" id="sn-out" style="gap:4px;margin-top:14px;min-height:44px"></div>
+  </div>
+  <div class="controls">
+    <label class="small muted"><span>Помехи в канале: <b id="sn-val">20</b> %</span>
+      <input id="sn-range" type="range" min="0" max="60" step="5" value="20">
+    </label>
+    <button class="btn primary small" type="button" id="sn-send">Передать</button>
+  </div>
+  <div id="sn-text" class="readout"></div>
+  <div class="small muted hint">Источник → канал связи → приёмник. Помехи искажают сообщение по дороге.</div>
+</div>
+<style>
+  .sn-line { display: flex; align-items: center; gap: 8px; }
+  .sn-wire { position: relative; flex: 1; height: 44px; border-radius: 22px; background: color-mix(in srgb, var(--line) 50%, transparent); overflow: hidden; }
+  .sn-wire::before { content: "канал связи"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .8rem; color: var(--mut); }
+  .sn-ch { position: absolute; top: 7px; left: 0; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-family: var(--mono);
+    background: var(--c); color: var(--on-c); transition: left 1.1s linear, background .15s; }
+  .sn-ch.bad { background: var(--err); }
+  .sn-spark { position: absolute; top: 4px; width: 6px; height: 36px; border-radius: 3px; background: var(--err); opacity: 0; animation: spark .5s infinite; }
+  @keyframes spark { 50% { opacity: .8; } }
+</style>
+<script>
+// Буквы летят по каналу связи. Чем сильнее помехи, тем больше букв приходит искажёнными.
+const MSG = "ВСТРЕЧА В 5";
+const ABC = "АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЫЭЮЯ0123456789";
+const range = document.getElementById("sn-range"), text = document.getElementById("sn-text"), wire = document.getElementById("sn-wire"), out = document.getElementById("sn-out");
+document.querySelectorAll(".sn-line .tile")[0].innerHTML = BB.icon("user") + " Источник";
+document.querySelectorAll(".sn-line .tile")[1].innerHTML = BB.icon("user") + " Приёмник";
+function sparks() {
+  wire.querySelectorAll(".sn-spark").forEach(s => s.remove());
+  const n = Math.round(+range.value / 10);
+  for (let i = 0; i < n; i++) wire.insertAdjacentHTML("beforeend", `<i class="sn-spark" style="left:${15 + Math.random() * 70}%;animation-delay:${Math.random() * .5}s"></i>`);
+}
+range.oninput = () => { document.getElementById("sn-val").textContent = range.value; sparks(); };
+let busy = false;
+async function send() {
+  if (busy) return; busy = true;
+  out.innerHTML = "";
+  const noise = +range.value / 100;
+  const got = [];
+  text.textContent = "Передаём…";
+  const W = wire.clientWidth;
+  for (let i = 0; i < MSG.length; i++) {
+    const ch = MSG[i];
+    const d = document.createElement("span");
+    d.className = "sn-ch"; d.style.setProperty("--c", `var(--c${(i % 6) + 1})`); d.textContent = ch === " " ? "_" : ch;
+    wire.appendChild(d);
+    let o = ch;
+    if (ch !== " " && Math.random() < noise) { o = ABC[Math.floor(Math.random() * ABC.length)]; if (o === ch) o = "?"; }
+    requestAnimationFrame(() => requestAnimationFrame(() => { d.style.left = (W - 30) + "px"; }));
+    setTimeout(() => { if (o !== ch) { d.classList.add("bad"); d.textContent = o; } }, 550);
+    setTimeout(() => {
+      d.remove();
+      out.insertAdjacentHTML("beforeend", `<span class="tile pop" style="--c: ${o !== ch ? "var(--err)" : `var(--c${(i % 6) + 1})`};padding:4px 9px;font-family:var(--mono)">${o === " " ? "&nbsp;" : o}</span>`);
+    }, 1150);
+    got.push(o);
+    await new Promise(r => setTimeout(r, 180));
+  }
+  await new Promise(r => setTimeout(r, 1200));
+  const s = got.join(""), bad = got.filter((c, i) => c !== MSG[i]).length;
+  text.textContent = `Получили: «${s}»` + (bad ? ` — искажено букв: ${bad}` : " — без ошибок");
+  busy = false;
+}
+document.getElementById("sn-send").onclick = send;
+sparks();
+send();
+</script>

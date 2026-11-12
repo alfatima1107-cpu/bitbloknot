@@ -1,0 +1,45 @@
+<div class="widget">
+  <div class="stage">
+    <div class="flow ss-f" id="ss-f"></div>
+    <div class="ss-bar"><i id="ss-fill"></i></div>
+    <div class="small muted" id="ss-cmp" style="text-align:center;margin-top:4px"></div>
+  </div>
+  <div class="controls">
+    <div class="seg" id="ss-hz"><button type="button" data-v="8000">8 кГц</button><button type="button" data-v="22050">22 кГц</button><button type="button" data-v="44100" class="on">44,1 кГц</button></div>
+    <div class="seg" id="ss-bits"><button type="button" data-v="8">8 бит</button><button type="button" data-v="16" class="on">16 бит</button><button type="button" data-v="24">24 бита</button></div>
+    <div class="seg" id="ss-ch"><button type="button" data-v="1">моно</button><button type="button" data-v="2" class="on">стерео</button></div>
+    <label class="small muted"><span>Длительность: <b id="ss-tv">10</b> с</span><input id="ss-t" type="range" min="1" max="180" value="10"></label>
+  </div>
+  <div id="ss-text" class="readout"></div>
+</div>
+<style>
+  .ss-f { gap: 6px; font-family: var(--mono); font-weight: 700; }
+  .ss-f .tile { flex-direction: column; gap: 0; padding: 6px 10px; cursor: default; }
+  .ss-f .tile small { font-weight: 500; font-size: .7rem; color: var(--mut); font-family: var(--font); }
+  .ss-bar { height: 16px; border-radius: 8px; margin-top: 14px; background: color-mix(in srgb, var(--line) 50%, transparent); overflow: hidden; }
+  .ss-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--c2), var(--c3), var(--c4)); transition: width .4s; }
+</style>
+<script>
+// Калькулятор объёма звука: формула из цветных множителей, результат и сравнение с флешкой на 1 Гбайт.
+const st = { hz: 44100, bits: 16, ch: 2 };
+const fmt = x => (Math.round(x * 100) / 100).toLocaleString("ru-RU");
+function upd() {
+  const t = +document.getElementById("ss-t").value;
+  document.getElementById("ss-tv").textContent = t;
+  const bits = st.hz * st.bits * st.ch * t, bytes = bits / 8, kb = bytes / 1024, mb = kb / 1024;
+  const T = (c, v, l) => `<span class="tile pop" style="--c: var(--c${c})">${v}<small>${l}</small></span>`;
+  document.getElementById("ss-f").innerHTML = T(1, st.hz.toLocaleString("ru-RU"), "замеров/с") + "×" + T(6, st.bits, "бит") + "×" + T(4, st.ch, st.ch > 1 ? "канала" : "канал") + "×" + T(2, t, "секунд") +
+    `= <span class="big-num">${mb >= 1 ? fmt(mb) + " Мбайт" : fmt(kb) + " Кбайт"}</span>`;
+  document.getElementById("ss-text").textContent = `${bits.toLocaleString("ru-RU")} бит = ${fmt(bytes)} байт = ${fmt(kb)} Кбайт = ${fmt(mb)} Мбайт`;
+  const share = mb / 1024;
+  document.getElementById("ss-fill").style.width = Math.min(100, Math.max(0.5, share * 100)) + "%";
+  document.getElementById("ss-cmp").textContent = `На флешку 1 Гбайт поместится примерно ${Math.floor(1024 / mb).toLocaleString("ru-RU")} таких записей`;
+}
+[["ss-hz", "hz"], ["ss-bits", "bits"], ["ss-ch", "ch"]].forEach(([id, key]) => document.getElementById(id).addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle("on", x === b));
+  st[key] = +b.dataset.v; upd();
+}));
+document.getElementById("ss-t").addEventListener("input", upd);
+upd();
+</script>

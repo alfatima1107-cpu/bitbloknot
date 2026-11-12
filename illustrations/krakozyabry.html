@@ -1,0 +1,54 @@
+<div class="widget">
+  <div class="stage"><div class="flow" id="kz-row" style="gap:4px;min-height:60px;perspective:600px"></div></div>
+  <div class="controls" style="flex-direction:column;gap:6px">
+    <div class="row small muted" style="gap:8px;justify-content:center">Записали в <div class="seg" id="kz-save">
+      <button type="button" data-e="windows-1251" class="on">Windows-1251</button>
+      <button type="button" data-e="utf-8">UTF-8</button>
+    </div></div>
+    <div class="row small muted" style="gap:8px;justify-content:center">Открыли как <div class="seg" id="kz-open">
+      <button type="button" data-e="windows-1251" class="on">Windows-1251</button>
+      <button type="button" data-e="koi8-r">КОИ-8</button>
+      <button type="button" data-e="ibm866">CP866</button>
+      <button type="button" data-e="utf-8">UTF-8</button>
+    </div></div>
+  </div>
+  <div id="kz-text" class="readout"></div>
+  <div class="small muted hint">Байты в файле одни и те же — меняется только таблица, по которой их читают.</div>
+</div>
+<style>
+  .kz-ch { --c: var(--ac); width: 34px; height: 44px; display: grid; place-items: center; border-radius: 8px; font-weight: 700; font-size: 1.2rem;
+    border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 15%, var(--card)); animation: kzflip .4s both; }
+  .kz-ch.bad { --c: var(--err); }
+  @keyframes kzflip { from { transform: rotateX(90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>
+<script>
+// Одна и та же строка, прочитанная по разным кодовым таблицам: буквы переворачиваются и показывают, что увидит программа.
+const PHRASE = "Привет, мир!";
+function to1251(s) {
+  return Uint8Array.from([...s].map(ch => {
+    const c = ch.charCodeAt(0);
+    if (c < 128) return c;
+    if (c >= 0x410 && c <= 0x44f) return c - 0x410 + 192;
+    if (ch === "Ё") return 168;
+    if (ch === "ё") return 184;
+    return 63;
+  }));
+}
+let save = "windows-1251", open = "windows-1251";
+const row = document.getElementById("kz-row"), text = document.getElementById("kz-text");
+function build() {
+  const bytes = save === "utf-8" ? new TextEncoder().encode(PHRASE) : to1251(PHRASE);
+  let out; try { out = new TextDecoder(open).decode(bytes); } catch (e) { out = "?"; }
+  const ok = out === PHRASE;
+  row.innerHTML = [...out].slice(0, 24).map((ch, i) => `<span class="kz-ch ${ok ? "" : "bad"}" style="--c: var(--c${(i % 6) + 1}); animation-delay:${i * 0.03}s">${ch === " " ? "&nbsp;" : ch.replace(/[<>&]/g, "?")}</span>`).join("");
+  text.textContent = `${bytes.length} байт → «${out}»` + (ok ? " — таблицы совпали, текст читается" : " — таблицы разные, получились «кракозябры»");
+}
+const seg = (id, set) => document.getElementById(id).addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle("on", x === b));
+  set(b.dataset.e); build();
+});
+seg("kz-save", v => { save = v; });
+seg("kz-open", v => { open = v; });
+build();
+</script>
