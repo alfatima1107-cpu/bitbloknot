@@ -14,7 +14,7 @@ $("#main").innerHTML = `
   <div class="spread">
     <div class="row">
       <span class="profile-mark">${icon("user")}</span>
-      <div><h1 style="margin:0">${esc(s.name)}</h1><div class="muted small">Класс ${esc(s.className)} · личный кабинет</div></div>
+      <div><h1 style="margin:0">${esc(s.name)}</h1><div class="muted small">${s.solo ? "Учусь самостоятельно" : `Класс ${esc(s.className)}`} · личный кабинет</div></div>
     </div>
     <button class="btn logout-btn" type="button" id="logout2">${icon("logout")} Выйти</button>
   </div>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru" data-theme="light" data-accent="blue">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Значки · БитБлокнот</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { background: #f3f4f7; }
+    .ig { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+    .ic { background: #fff; border: 1px solid #e6e8ee; border-radius: 16px; padding: 16px 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .ic .icon { width: 28px; height: 28px; color: #2b2f3a; }
+    .ic code { font-size: 11px; color: #7a808d; }
+    :root[data-theme="dark"] body { background: #0f1117; }
+    :root[data-theme="dark"] .ic { background: #1a1d26; border-color: #2a2e3a; }
+    :root[data-theme="dark"] .ic .icon { color: #e6e8ee; }
+  </style>
+</head>
+<body>
+  <!-- Витрина всех значков из js/icons.js — для проверки, что они в одном стиле. Не часть сайта. -->
+  <main class="wrap" style="padding:20px 16px">
+    <div class="spread" style="margin-bottom:14px"><h1 style="margin:0">Значки БитБлокнота</h1>
+      <button class="btn small" type="button" onclick="const d=document.documentElement;d.dataset.theme=d.dataset.theme==='dark'?'light':'dark'">Тема</button></div>
+    <p class="muted" id="count"></p>
+    <div class="ig" id="grid"></div>
+  </main>
+  <script type="module">
+    import { PATHS, icon } from "../js/icons.js";
+    const names = Object.keys(PATHS).sort();
+    document.getElementById("count").textContent = `${names.length} значков · сетка 24×24, линия 2 px · основа — Lucide (ISC)`;
+    document.getElementById("grid").innerHTML = names.map(n => `<div class="ic">${icon(n)}<code>${n}</code></div>`).join("");
+  </script>
+</body>
+</html>

@@ -7,9 +7,10 @@ import { esc, icon } from "../ui.js";
 const PAIR_COLORS = 6;
 
 /**
- * box — контейнер; q — вопрос; onCorrect — вызывается после верного ответа (открывает «Дальше»).
+ * box — контейнер; q — вопрос; onCorrect — вызывается после верного ответа (открывает «Дальше»);
+ * onWrong — после каждой ошибки (для статистики «с первой попытки»).
  */
-export function renderStepQuestion(box, q, onCorrect) {
+export function renderStepQuestion(box, q, onCorrect, onWrong = () => {}) {
   const type = SQ.typeOf(q);
   const hintByType = {
     choice: "",
@@ -36,6 +37,7 @@ export function renderStepQuestion(box, q, onCorrect) {
       box.classList.add("solved");
       onCorrect();
     } else {
+      if (!res.invalid) onWrong();
       fb.classList.add(res.invalid ? "warn" : "bad");
       fb.querySelector(".fh").textContent = res.message || badText;
       fb.querySelector(".fb").classList.add("hidden");

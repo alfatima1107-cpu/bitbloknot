@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Концепты дизайна · БитБлокнот</title>
+<!-- Черновик для выбора стиля: три макета главной ученика в стиле Liquid Glass по референсам. Не часть сайта. -->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Segoe UI", system-ui, sans-serif; background: #d9dde3; padding: 24px; color: #15171c; }
+  h2 { font: 600 15px/1.2 inherit; margin: 26px 4px 10px; color: #444; letter-spacing: .02em; }
+  .frame { position: relative; width: 1180px; height: 700px; border-radius: 26px; overflow: hidden; display: flex; gap: 16px; padding: 18px; isolation: isolate; }
+  /* цветные пятна под стеклом */
+  .blob { position: absolute; border-radius: 50%; filter: blur(60px); z-index: -1; }
+  /* стекло: полупрозрачный фон, размытие, светлый край-блик и мягкая тень */
+  .glass { background: rgba(255,255,255,.52); backdrop-filter: blur(22px) saturate(1.6); -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,.75); box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(255,255,255,.25), 0 10px 30px -12px rgba(40,50,80,.25); border-radius: 22px; }
+  .dark .glass { background: rgba(30,32,44,.48); border-color: rgba(255,255,255,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 14px 40px -14px rgba(0,0,0,.6); }
+  .rail { width: 64px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0; }
+  .ri { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; color: #5d6370; }
+  .ri.on { background: #15171c; color: #fff; box-shadow: 0 6px 16px -6px rgba(0,0,0,.5); }
+  .dark .ri { color: #a9adbb; } .dark .ri.on { background: #fff; color: #15171c; }
+  .ri svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .main { flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .top { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; }
+  .tab { padding: 7px 14px; border-radius: 999px; font-size: 13px; color: #5d6370; }
+  .tab.on { background: #15171c; color: #fff; }
+  .dark .tab { color: #a9adbb; } .dark .tab.on { background: #fff; color: #15171c; }
+  .title { font-size: 26px; font-weight: 650; letter-spacing: -.02em; margin-right: auto; }
+  .btn { padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #15171c; color: #fff; }
+  .dark .btn { background: #fff; color: #15171c; }
+  .ava { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,#ffd29a,#ff9fb5); border: 2px solid #fff; }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .dots { display: flex; gap: 4px; margin-top: 10px; } .dots i { width: 9px; height: 9px; border-radius: 50%; }
+  .muted { color: #6b7180; font-size: 12px; } .dark .muted { color: #9aa0ae; }
+  .col h4 { margin: 0 0 10px; font-size: 13px; display: flex; justify-content: space-between; color: #444a55; } .dark .col h4 { color: #c9ccd6; }
+  .card { padding: 14px; border-radius: 18px; margin-bottom: 10px; }
+  .card b { display: block; font-size: 14px; margin: 8px 0 2px; }
+  .stat b { font-size: 30px; font-weight: 650; letter-spacing: -.02em; display: block; }
+  svg.lines { position: absolute; inset: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<h2>A. Стеклянный путь — по второму референсу: колонки уроков, связанные линиями</h2>
+<div class="frame" style="background: linear-gradient(160deg,#eef1f5,#dfe4ea)">
+  <div class="blob" style="width:420px;height:420px;background:#c9c2ff;left:300px;top:-120px"></div>
+  <div class="blob" style="width:380px;height:380px;background:#ffd6b8;right:-60px;bottom:-80px"></div>
+  <div class="blob" style="width:300px;height:300px;background:#bdeedc;left:-60px;bottom:40px"></div>
+  <nav class="glass rail" id="railA"></nav>
+  <div class="main">
+    <div class="top glass"><div class="title">Мой путь</div>
+      <div class="tabs glass"><span class="tab">Главная</span><span class="tab on">Темы</span><span class="tab">Тренажёры</span><span class="tab">Достижения</span></div>
+      <span class="btn">Продолжить урок</span><span class="ava"></span></div>
+    <div class="glass" style="flex:1;padding:18px;position:relative">
+      <div class="muted" style="margin-bottom:12px">Тема 5 · Алфавит и двоичный код · пройдено 7 из 18 шагов</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px;position:relative">
+        <div class="col"><h4>Урок 1 <span>4/4</span></h4>
+          <div class="glass card"><span class="pill" style="background:#e9e5ff;color:#4b3fc4">готово</span><b>Символы и алфавит</b><div class="muted">4 шага · вопрос пройден</div></div>
+          <div class="glass card"><span class="pill" style="background:#e9e5ff;color:#4b3fc4">готово</span><b>Сколько бит на символ</b><div class="muted">лампочки-биты</div></div></div>
+        <div class="col"><h4>Урок 2 <span>3/4</span></h4>
+          <div class="glass card"><span class="pill" style="background:#dcf5ea;color:#1a7a52">готово</span><b>Азбука Морзе</b></div>
+          <div class="card" style="background:#15171c;color:#fff"><span class="pill" style="background:#c6f432;color:#15171c">сейчас</span><b>QR-код</b><div style="font-size:12px;opacity:.7">осталось 1 шаг</div></div></div>
+        <div class="col"><h4>Урок 3 <span>0/4</span></h4>
+          <div class="glass card"><span class="pill" style="background:#ffe9d6;color:#b55a17">дальше</span><b>Кодовая таблица</b><div class="dots"><i style="background:#f6a463"></i><i style="background:#fbd8bc"></i><i style="background:#fbd8bc"></i><i style="background:#fbd8bc"></i></div></div>
+          <div class="glass card"><span class="pill" style="background:#ffe1ec;color:#b1325f">дальше</span><b>Неравномерный код</b></div></div>
+        <div class="col"><h4>Урок 4 <span>0/4</span></h4>
+          <div class="glass card" style="opacity:.8"><span class="pill" style="background:#eef0f4;color:#646a78">закрыто</span><b>Двоичные числа</b></div>
+          <div class="glass card stat"><span class="muted">Серия</span><b>5 дней</b></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:14px;margin-top:22px">
+        <div class="glass card" style="margin:0;padding:18px"><span class="muted">После уроков</span><b style="font-size:18px">Тренажёр «Алфавит и биты»</b><div class="muted">выполни задание, чтобы засчитать 10% темы</div><div style="margin-top:12px"><span class="btn">Открыть</span></div></div>
+        <div class="glass card stat" style="margin:0;padding:18px"><span class="muted">Задачи</span><b>12 / 20</b><div class="dots"><i style="background:#7a6cf0"></i><i style="background:#7a6cf0"></i><i style="background:#7a6cf0"></i><i style="background:#d6d0fb"></i><i style="background:#d6d0fb"></i></div></div>
+        <div class="glass card stat" style="margin:0;padding:18px"><span class="muted">Тест темы</span><b>ещё не сдан</b><div class="muted">10 вопросов, зачёт от 70%</div></div>
+      </div>
+      <svg class="lines" viewBox="0 0 1000 560" preserveAspectRatio="none"><path d="M245 120 C 265 120 265 120 285 120 M500 205 C 520 205 520 120 540 120 M755 120 C 775 120 775 120 795 120" stroke="#9aa3b2" stroke-width="2" fill="none" stroke-dasharray="4 5"/></svg>
+    </div>
+  </div>
+</div>
+
+<h2>B. Пастель под стеклом — по первому референсу: доска с колонками и пастельными карточками</h2>
+<div class="frame" style="background: linear-gradient(135deg,#f7f3ff,#fff5ee 55%,#eefaf5)">
+  <div class="blob" style="width:460px;height:460px;background:#d8ccff;left:120px;top:120px"></div>
+  <div class="blob" style="width:420px;height:420px;background:#ffd2e2;right:120px;top:-140px"></div>
+  <div class="blob" style="width:380px;height:380px;background:#c6f0dc;right:-80px;bottom:-60px"></div>
+  <nav class="glass rail" style="width:200px;align-items:stretch;padding:16px 12px" id="railB"></nav>
+  <div class="main">
+    <div class="top glass"><div><div class="title">Привет, Петя</div><div class="muted">Сегодня 13 ноября · серия 5 дней</div></div>
+      <span style="margin-left:auto" class="btn">Продолжить урок 3</span><span class="ava"></span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;flex:1">
+      <div class="glass col" style="padding:14px"><h4>Начать <span>3</span></h4>
+        <div class="card" style="background:#e9e5ff"><span class="pill" style="background:#fff;color:#4b3fc4">тема 7</span><b>Кодирование текста</b><div class="muted">4 урока</div><div class="dots"><i style="background:#cfc8ff"></i><i style="background:#cfc8ff"></i><i style="background:#cfc8ff"></i><i style="background:#cfc8ff"></i></div></div>
+        <div class="card" style="background:#ffe1ec"><span class="pill" style="background:#fff;color:#b1325f">тема 8</span><b>Изображения</b><div class="muted">пиксели-плитки 3D</div></div></div>
+      <div class="glass col" style="padding:14px"><h4>В процессе <span>2</span></h4>
+        <div class="card" style="background:#ffe9d6"><span class="pill" style="background:#fff;color:#b55a17">тема 5</span><b>Двоичный код</b><div class="muted">урок 3 из 4</div><div class="dots"><i style="background:#f6a463"></i><i style="background:#f6a463"></i><i style="background:#f6a463"></i><i style="background:#fbd8bc"></i></div></div>
+        <div class="card" style="background:#dcf5ea"><span class="pill" style="background:#fff;color:#1a7a52">тема 6</span><b>Единицы</b><div class="dots"><i style="background:#56c896"></i><i style="background:#bfe9d5"></i><i style="background:#bfe9d5"></i><i style="background:#bfe9d5"></i></div></div></div>
+      <div class="glass col" style="padding:14px"><h4>Повторить <span>1</span></h4>
+        <div class="card" style="background:#e0eeff"><span class="pill" style="background:#fff;color:#2559b8">тема 2</span><b>Файлы и пути</b><div class="muted">прошло 3 дня — пора повторить</div></div></div>
+      <div class="glass col" style="padding:14px"><h4>Сдано <span>2</span></h4>
+        <div class="card" style="background:rgba(255,255,255,.7)"><span class="pill" style="background:#15171c;color:#fff">оценка 5</span><b>Компьютер</b></div>
+        <div class="card" style="background:rgba(255,255,255,.7)"><span class="pill" style="background:#15171c;color:#fff">оценка 4</span><b>Информация</b></div></div>
+    </div>
+  </div>
+</div>
+
+<h2>C. Тёмное стекло — вариант B для тёмной темы, пятна светятся сквозь стекло</h2>
+<div class="frame dark" style="background:#0e0f15;color:#eceef4">
+  <div class="blob" style="width:460px;height:460px;background:#5b46ff;left:160px;top:60px;opacity:.55"></div>
+  <div class="blob" style="width:400px;height:400px;background:#ff5a8c;right:100px;top:-150px;opacity:.45"></div>
+  <div class="blob" style="width:380px;height:380px;background:#1fd19a;right:-90px;bottom:-80px;opacity:.4"></div>
+  <nav class="glass rail" id="railC"></nav>
+  <div class="main">
+    <div class="top glass"><div class="title">Привет, Петя</div>
+      <div class="tabs glass"><span class="tab on">Главная</span><span class="tab">Темы</span><span class="tab">Тренажёры</span></div>
+      <span class="btn">Продолжить</span><span class="ava"></span></div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;flex:1">
+      <div class="glass" style="grid-row:span 2;padding:20px"><span class="muted">Курс</span><div style="font-size:64px;font-weight:650;letter-spacing:-.03em;margin:6px 0">42%</div><div class="muted">8 из 48 уроков</div>
+        <div style="display:flex;gap:6px;margin-top:22px;flex-wrap:wrap">
+          <span class="pill" style="background:rgba(155,140,255,.25);color:#c9c0ff">двоичный код</span><span class="pill" style="background:rgba(255,160,100,.22);color:#ffc49a">единицы</span><span class="pill" style="background:rgba(60,220,160,.2);color:#8ff0c9">файлы</span></div></div>
+      <div class="glass stat" style="padding:18px"><span class="muted">Серия</span><b>5 дней</b><div class="dots"><i style="background:#ff7aa2"></i><i style="background:#ff7aa2"></i><i style="background:#ff7aa2"></i><i style="background:#ff7aa2"></i><i style="background:#ff7aa2"></i><i style="background:#3a2b36"></i><i style="background:#3a2b36"></i></div></div>
+      <div class="glass stat" style="padding:18px"><span class="muted">Решено задач</span><b>136</b><div class="muted">с первой попытки 71%</div></div>
+      <div class="glass" style="grid-column:span 2;padding:18px"><span class="muted">Сегодня</span><div style="font-size:18px;font-weight:600;margin:6px 0 10px">Закончи урок «QR-код» и повтори «Файлы»</div><span class="btn">Начать</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // одинаковое меню значков во всех макетах
+  const I = {
+    home: "M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z", book: "M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2zM5 21V5", flask: "M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3",
+    trophy: "M8 4h8v5a4 4 0 0 1-8 0zM6 5H4a3 3 0 0 0 4 4M18 5h2a3 3 0 0 1-4 4M12 13v4M8 21h8", user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0", gear: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-2-4-2 1-2-2V4h-4v2L9 8 7 7 5 11l2 1v0l-2 1 2 4 2-1 2 2v2h4v-2l2-2 2 1 2-4z",
+  };
+  const icon = k => `<svg viewBox="0 0 24 24"><path d="${I[k]}"/></svg>`;
+  for (const id of ["railA", "railC"]) document.getElementById(id).innerHTML =
+    `<div class="ri on">${icon("home")}</div>` + ["book", "flask", "trophy", "user"].map(k => `<div class="ri">${icon(k)}</div>`).join("") + `<div style="flex:1"></div><div class="ri">${icon("gear")}</div>`;
+  document.getElementById("railB").innerHTML = `<div style="font-weight:700;font-size:17px;margin:4px 8px 16px">БитБлокнот</div>` +
+    [["home", "Главная", 1], ["book", "Темы"], ["flask", "Тренажёры"], ["trophy", "Достижения"], ["user", "Профиль"]].map(([k, t, on]) =>
+      `<div class="ri ${on ? "on" : ""}" style="width:auto;justify-content:flex-start;display:flex;gap:10px;padding:0 12px;font-size:14px">${icon(k)}${t}</div>`).join("");
+</script>
+</body>
+</html>

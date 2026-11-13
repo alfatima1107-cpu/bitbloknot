@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Концепты входа · БитБлокнот</title>
+<!-- Черновик для выбора: варианты экрана входа (ученик по кодам, самостоятельно, учитель) в стиле стеклянных уроков. Не часть сайта.
+     Адрес вида #v2 показывает только один макет. -->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Segoe UI", system-ui, sans-serif; background: #d6dae0; padding: 24px; color: #15171c; }
+  h2 { font: 650 15px/1.3 inherit; margin: 30px 4px 10px; color: #3d424c; }
+  .frame { position: relative; width: 1180px; height: 700px; border-radius: 26px; overflow: hidden; isolation: isolate; background: linear-gradient(160deg,#eef1f5,#dfe4ea); display: flex; align-items: center; justify-content: center; }
+  .frame.dark { background: #0d0e14; color: #eceef4; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(90px); z-index: -1; opacity: .5; }
+  .dark .blob { opacity: .5; }
+  .glass { background: rgba(255,255,255,.58); backdrop-filter: blur(22px) saturate(1.6); -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,.85); box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 10px 30px -18px rgba(40,50,80,.22); border-radius: 26px; }
+  .dark .glass { background: rgba(28,30,42,.55); border-color: rgba(255,255,255,.13); box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 20px 50px -20px rgba(0,0,0,.8); }
+  .ink { background: #2b2f3a; color: #f4f5f8; } .dark .ink { background: #e6e8ee; color: #1b1d25; }
+  .muted { color: #6b7180; font-size: 13px; } .dark .muted { color: #9aa0ae; }
+  .ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .seg { display: flex; gap: 3px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.85); }
+  .dark .seg { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); }
+  .seg span { flex: 1; text-align: center; padding: 9px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #5d6370; display: flex; gap: 6px; justify-content: center; align-items: center; white-space: nowrap; }
+  .dark .seg span { color: #a9adbb; }
+  .seg span.on { background: #fff; color: #1d2027; box-shadow: 0 2px 8px -3px rgba(40,50,80,.25); } .dark .seg span.on { background: rgba(255,255,255,.14); color: #eceef4; box-shadow: none; }
+  .digits { display: flex; gap: 8px; }
+  .dg { width: 46px; height: 58px; border-radius: 14px; display: grid; place-items: center; font: 700 24px/1 "Consolas", monospace;
+    background: rgba(255,255,255,.75); border: 1px solid rgba(255,255,255,.95); box-shadow: inset 0 1px 0 #fff; }
+  .dark .dg { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); box-shadow: none; }
+  .dg.cur { border: 1.5px solid #a39af0; box-shadow: 0 0 0 3px rgba(139,124,255,.12); }
+  .dg.empty { color: transparent; }
+  .lbl { font-size: 12.5px; font-weight: 600; color: #4b505c; margin: 0 0 8px; display: flex; justify-content: space-between; } .dark .lbl { color: #c4c7d2; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 18px; border-radius: 999px; font-size: 14px; font-weight: 650; }
+  .field { height: 48px; border-radius: 14px; padding: 0 14px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #8a8f9c;
+    background: rgba(255,255,255,.75); border: 1px solid rgba(255,255,255,.95); }
+  .dark .field { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); color: #8f94a3; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 750; font-size: 18px; }
+  .logo i { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.7); color: #3d4250; border: 1px solid rgba(255,255,255,.9); } .dark .logo i { background: rgba(255,255,255,.08); color: #d6d9e2; border-color: rgba(255,255,255,.12); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 650; }
+  .note { display: none; position: absolute; font-size: 12px; font-weight: 650; padding: 6px 10px; border-radius: 10px; background: #15171c; color: #fff; }
+  .phone { width: 360px; height: 720px; border-radius: 40px; position: relative; overflow: hidden; isolation: isolate; border: 10px solid #15171c; background: linear-gradient(160deg,#eef1f5,#dfe4ea); }
+  .row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<h2>1. «Стеклянная карта» — светлая. Одна карточка по центру: переключатель «Ученик / Сам / Учитель», код из отдельных клеток</h2>
+<div class="frame" id="v1"></div>
+
+<h2>1. «Стеклянная карта» — тёмная. Код класса введён и проверен: показывается название класса, курсор перешёл к личному коду</h2>
+<div class="frame dark" id="v1d"></div>
+
+<h2>2. «Две колонки» — слева приветствие и живые плитки «что внутри», справа стеклянная форма. Вкладка «Сам»</h2>
+<div class="frame" id="v2"></div>
+
+<h2>3. «Пропуск» — код вводится прямо на большой стеклянной карточке-пропуске (как распечатанная карточка входа)</h2>
+<div class="frame dark" id="v3"></div>
+
+<h2>Телефон: вход по кодам · самостоятельно · учитель · ошибка и пауза после 5 попыток</h2>
+<div class="row" id="phones"></div>
+
+<script>
+const P = {
+  book: "M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM9 4v16M13 8h2M13 12h2",
+  bag: "M7 8V6a5 5 0 0 1 10 0v2M5 8h14l-1 12H6zM10 12h4", user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0",
+  teacher: "M4 5h16v10H4zM8 19l4-4 4 4M12 9h4", right: "M5 12h14M13 6l6 6-6 6", back: "M14.5 5.5L8 12l6.5 6.5", check: "M5 12.5l4.5 4.5L19 7.5",
+  mail: "M4 6h16v12H4zM4 7l8 6 8-6", lock: "M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z", key: "M14 10a4 4 0 1 0-4 4l1 1v2h2v2h3v-3zM15 7h.01",
+  shield: "M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z", clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2", save: "M5 4h11l3 3v13H5zM8 4v5h7M8 20v-6h8v6",
+  flask: "M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3", star: "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z",
+  palette: "M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-1.2-1-1.5-1-2.5 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.1-4-7.5-9-7.5z", alert: "M12 4l9 16H3zM12 10v4M12 17h.01",
+};
+const ic = (k, s = "") => `<svg class="ico" viewBox="0 0 24 24" style="${s}"><path d="${P[k]}"/></svg>`;
+const blobs = dark => dark
+  ? `<div class="blob" style="width:480px;height:480px;background:#4a4390;left:170px;top:40px"></div><div class="blob" style="width:420px;height:420px;background:#7a3f5c;right:120px;top:-170px"></div><div class="blob" style="width:400px;height:400px;background:#2c6b58;right:-100px;bottom:-90px"></div>`
+  : `<div class="blob" style="width:460px;height:460px;background:#cbc3ff;left:220px;top:-160px"></div><div class="blob" style="width:420px;height:420px;background:#ffd5bd;right:-80px;bottom:-90px"></div><div class="blob" style="width:340px;height:340px;background:#bdeedc;left:-80px;bottom:20px"></div>`;
+const corner = `<div style="position:absolute;left:24px;top:22px" class="logo"><i>${ic("book")}</i>БитБлокнот</div>
+  <div class="glass" style="position:absolute;right:24px;top:20px;padding:9px 14px;border-radius:999px;display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600">${ic("palette")}Оформление</div>`;
+const digits = (vals, n, cur = -1) => `<div class="digits">${Array.from({ length: n }, (_, i) => `<span class="dg ${vals[i] === undefined ? "empty" : ""} ${i === cur ? "cur" : ""}">${vals[i] ?? "0"}</span>`).join("")}</div>`;
+const seg = on => `<div class="seg">${[["Ученик", "bag"], ["Сам", "user"], ["Учитель", "teacher"]].map(([t, k]) => `<span class="${t === on ? "on" : ""}">${ic(k, "width:16px;height:16px")}${t}</span>`).join("")}</div>`;
+const studentForm = (cls, me, curCls, curMe, found) => `
+  <div style="margin-top:22px"><div class="lbl"><span>Код класса</span><span class="muted" style="font-size:12px">6 цифр от учителя</span></div>${digits(cls, 6, curCls)}</div>
+  ${found ? `<div class="chip" style="margin-top:12px;background:rgba(86,200,150,.2);color:#1f8a5c">${ic("check", "width:14px;height:14px")}Класс 7Б · Иванова А. В.</div>` : ""}
+  <div style="margin-top:18px"><div class="lbl"><span>Твой личный код</span><span class="muted" style="font-size:12px">4 цифры</span></div>${digits(me, 4, curMe)}</div>
+  <div class="btn ink" style="margin-top:22px">Войти ${ic("right")}</div>
+  <div class="muted" style="text-align:center;margin-top:14px">Забыл код? Посмотри карточку входа или спроси учителя</div>`;
+
+document.getElementById("v1").innerHTML = blobs(false) + corner + `
+  <div class="glass" style="width:440px;padding:30px 32px">
+    <div style="text-align:center;margin-bottom:18px"><div style="font-size:24px;font-weight:650;letter-spacing:-.01em">С возвращением!</div><div class="muted">Выбери, как ты входишь</div></div>
+    ${seg("Ученик")}${studentForm(["4", "8", "2"], [], 3, -1, false)}
+  </div>
+  <div class="note" style="left:770px;top:330px">цифры переходят в следующую клетку сами</div>`;
+
+document.getElementById("v1d").innerHTML = blobs(true) + corner + `
+  <div class="glass" style="width:440px;padding:30px 32px">
+    <div style="text-align:center;margin-bottom:18px"><div style="font-size:24px;font-weight:650;letter-spacing:-.01em">С возвращением!</div><div class="muted">Выбери, как ты входишь</div></div>
+    ${seg("Ученик")}${studentForm(["4", "8", "2", "9", "1", "3"], ["7"], -1, 1, true)}
+  </div>`;
+
+document.getElementById("v2").innerHTML = blobs(false) + corner + `
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:40px;width:1040px;align-items:center">
+    <div>
+      <div class="chip" style="background:rgba(139,124,255,.18);color:#4b3fc4">информатика · 7 класс</div>
+      <div style="font-size:40px;font-weight:650;letter-spacing:-.02em;line-height:1.05;margin:14px 0 12px">Учись в своём темпе —<br>с классом или сам</div>
+      <div class="muted" style="font-size:15px;line-height:1.6;max-width:440px">48 уроков, тренажёры-игры, бесконечные задачи и подсказки, которые понимают, в чём именно ошибка.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px;max-width:470px">
+        ${[["flask", "12 тренажёров", "#8b7cff"], ["star", "14 достижений", "#f6a463"], ["clock", "цель дня", "#56c896"], ["book", "101 термин", "#ff8fb0"]].map(([k, t, c]) => `<div class="glass" style="padding:14px 16px;border-radius:18px;display:flex;gap:12px;align-items:center"><span style="width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:${c}33;color:${c}">${ic(k)}</span><b style="font-size:14px">${t}</b></div>`).join("")}
+      </div>
+    </div>
+    <div class="glass" style="padding:30px 32px">
+      ${seg("Сам")}
+      <div style="font-size:22px;font-weight:750;margin:22px 0 6px">Учиться самостоятельно</div>
+      <div class="muted">Без класса и учителя. Прогресс сохранится в этом браузере.</div>
+      <div class="glass" style="margin-top:18px;padding:14px 16px;border-radius:18px;display:flex;gap:12px;align-items:center">
+        <span style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ffd29a,#ff9fb5)"></span>
+        <div style="flex:1"><b style="font-size:14px">Продолжить как Петя</b><div class="muted">пройдено 18% курса · серия 3 дня</div></div>${ic("right")}</div>
+      <div class="lbl" style="margin-top:18px"><span>Или начни заново</span></div>
+      <div class="field">${ic("user")}Как тебя зовут?</div>
+      <div class="btn ink" style="margin-top:14px">Начать учиться ${ic("right")}</div>
+      <div style="display:flex;gap:10px;margin-top:14px"><div class="field" style="flex:1;justify-content:center;font-weight:600;color:inherit">${ic("save")}Скачать копию</div><div class="field" style="flex:1;justify-content:center;font-weight:600;color:inherit">${ic("save")}Загрузить</div></div>
+    </div>
+  </div>`;
+
+document.getElementById("v3").innerHTML = blobs(true) + corner + `
+  <div style="display:flex;flex-direction:column;align-items:center;gap:18px">
+    ${seg("Ученик").replace('class="seg"', 'class="seg" style="width:420px"')}
+    <div class="glass" style="width:560px;padding:28px 32px;border-radius:30px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,#8b7cff66,transparent 70%)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><div class="logo" style="font-size:15px"><i style="width:30px;height:30px">${ic("book", "width:16px;height:16px")}</i>Карточка входа</div><span class="chip" style="background:rgba(255,255,255,.08);color:#c4c7d2">${ic("shield", "width:14px;height:14px")}защищено</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px">
+        <div><div class="lbl">Код класса</div><div style="font:700 34px/1 Consolas,monospace;letter-spacing:.18em">482 91<span style="opacity:.3">_</span></div><div style="height:2px;background:linear-gradient(90deg,#8b7cff,#ff8fb0);margin-top:10px;border-radius:2px;width:84%"></div></div>
+        <div><div class="lbl">Личный код</div><div style="font:700 34px/1 Consolas,monospace;letter-spacing:.18em;opacity:.35">• • • •</div><div style="height:2px;background:rgba(255,255,255,.15);margin-top:10px;border-radius:2px"></div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:26px"><div class="muted">${ic("key", "width:14px;height:14px;vertical-align:-2px")} коды с бумажной карточки, которую выдал учитель</div><div class="btn ink" style="padding:12px 20px">Войти ${ic("right")}</div></div>
+    </div>
+    <div class="muted">Учишься сам? <b style="color:#c9c0ff">Учиться без класса</b> · Учитель? <b style="color:#c9c0ff">Войти по почте</b></div>
+  </div>`;
+
+const phone = (inner, dark) => `<div class="phone" style="${dark ? "background:#0d0e14;color:#eceef4" : ""}">${blobs(dark).replace(/480px|460px|420px|400px|340px/g, "240px")}${inner}</div>`;
+const pTop = `<div style="position:absolute;left:18px;right:18px;top:18px;display:flex;justify-content:space-between;align-items:center"><div class="glass" style="width:40px;height:40px;border-radius:14px;display:grid;place-items:center">${ic("back")}</div><div class="logo" style="font-size:15px"><i style="width:30px;height:30px">${ic("book", "width:16px;height:16px")}</i>БитБлокнот</div><div style="width:40px"></div></div>`;
+const pCard = inner => `<div class="glass" style="position:absolute;left:14px;right:14px;top:84px;padding:22px 18px;border-radius:28px">${inner}</div>`;
+const small = s => s.replace(/class="dg/g, 'style="width:38px;height:50px;font-size:20px" class="dg');
+document.getElementById("phones").innerHTML =
+  phone(pTop + pCard(seg("Ученик") + small(studentForm(["1", "5", "4", "4", "6", "3"], ["5", "7"], -1, 2, true)))) +
+  phone(pTop + pCard(seg("Сам") + `<div style="font-size:20px;font-weight:750;margin:20px 0 6px">Учиться самостоятельно</div><div class="muted">Прогресс сохранится в этом браузере.</div>
+    <div class="lbl" style="margin-top:18px">Как тебя зовут?</div><div class="field">${ic("user")}Петя</div><div class="btn ink" style="margin-top:16px">Начать учиться ${ic("right")}</div>
+    <div class="muted" style="text-align:center;margin-top:16px">${ic("save", "width:14px;height:14px;vertical-align:-2px")} Скачать или загрузить копию</div>`)) +
+  phone(pTop + pCard(seg("Учитель") + `<div style="font-size:20px;font-weight:750;margin:20px 0 14px">Кабинет учителя</div>
+    <div class="lbl">Почта</div><div class="field">${ic("mail")}teacher@school.ru</div>
+    <div class="lbl" style="margin-top:14px">Пароль</div><div class="field">${ic("lock")}••••••••</div>
+    <div class="btn ink" style="margin-top:18px">Войти ${ic("right")}</div><div class="muted" style="text-align:center;margin-top:14px">Нет аккаунта? <b>Зарегистрироваться</b></div>`), true) +
+  phone(pTop + pCard(seg("Ученик") + small(studentForm(["1", "5", "4", "4", "6", "3"], ["0", "0", "0", "0"], -1, -1, false)).replace('<div class="btn ink"', `<div class="chip" style="margin-top:16px;background:rgba(255,120,120,.18);color:#d03b3b;width:100%;justify-content:center;padding:10px">${ic("clock", "width:14px;height:14px")}Слишком много попыток — подожди 24 с</div><div class="btn ink" style="opacity:.4"`)));
+
+if (location.hash) {
+  const id = location.hash.slice(1);
+  document.querySelectorAll(".frame, #phones, h2").forEach(e => { e.style.display = "none"; });
+  const el = document.getElementById(id);
+  if (el) { el.style.display = ""; el.previousElementSibling.style.display = ""; }
+}
+</script>
+</body>
+</html>

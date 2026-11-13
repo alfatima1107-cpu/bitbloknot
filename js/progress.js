@@ -16,6 +16,9 @@
 //   days         — дни, когда ученик занимался: ["2026-11-10", "2026-11-12"]
 //   last         — последняя активность в теме: { "8": "2026-11-12T..." }
 //   bestStreak   — рекорд серии дней
+//   time         — активное время по дням, в секундах: { "2026-11-13": 412 } (js/daily.js)
+//   goal         — цель дня в минутах (5, 10, 15 или 20)
+//   cards        — флеш-карточки словарика: { "Бит": { b: 2, d: "2026-11-16" } } (js/flashcards.js)
 
 export const MAX_ATTEMPTS = 200;   // ячейка Google Таблицы вмещает до 50 000 символов
 
@@ -23,7 +26,7 @@ export function emptyProgress() {
   return {
     steps: {}, trainer: {}, attempts: [], tests: [], topics: {}, achievements: {}, days: [], last: {},
     counters: { tasks: 0, tasksOk: 0, fixed: 0, run: 0, bestRun: 0, byTopic: {}, errors: {} },
-    bestStreak: 0,
+    bestStreak: 0, time: {}, goal: 10, cards: {},
   };
 }
 

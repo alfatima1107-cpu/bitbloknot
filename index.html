@@ -29,10 +29,7 @@
             <span><b>Я учитель</b><span class="small muted">Создать класс и видеть прогресс</span></span>
           </a>
         </div>
-        <button class="btn ghost small soon-btn" type="button" disabled title="Скоро"><i data-icon="book"></i> Учиться самостоятельно — скоро</button>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="bits" id="bits"></div>
+        <a class="btn ghost small" href="solo.html"><i data-icon="book"></i> Учиться самостоятельно, без класса</a>
       </div>
     </section>
 
@@ -50,23 +47,14 @@
     <div class="how">
       <div class="how-step"><span class="how-n mono">1</span><div><b>Учитель создаёт класс</b><br><span class="muted small">Например «7Б» — система выдаёт уникальный код класса из 6 цифр.</span></div></div>
       <div class="how-step"><span class="how-n mono">2</span><div><b>Добавляет учеников</b><br><span class="muted small">Каждый получает личный код из 4 цифр. Карточки входа можно распечатать.</span></div></div>
-      <div class="how-step"><span class="how-n mono">3</span><div><b>Ученик входит</b><br><span class="muted small">Код класса + личный код, выбирает аватар — и вперёд, к первому уроку!</span></div></div>
+      <div class="how-step"><span class="how-n mono">3</span><div><b>Ученик входит</b><br><span class="muted small">Код класса + личный код, и вперёд, к первому уроку!</span></div></div>
     </div>
   </main>
 
   <script type="module">
     import { page } from "./js/ui.js";
     page({ home: "index.html" });
-    // Живая «стена битов» справа: нули и единицы иногда переворачиваются
-    const box = document.getElementById("bits");
-    const N = 64;
-    box.innerHTML = Array.from({ length: N }, () => `<span>${Math.random() < .5 ? 0 : 1}</span>`).join("");
-    const cells = [...box.children];
-    setInterval(() => {
-      const c = cells[Math.floor(Math.random() * N)];
-      c.textContent = c.textContent === "0" ? "1" : "0";
-      c.classList.add("flip"); setTimeout(() => c.classList.remove("flip"), 600);
-    }, 220);
   </script>
+  <script type="module" src="js/home-ocean.js"></script>
 </body>
 </html>

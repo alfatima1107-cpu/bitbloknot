@@ -482,3 +482,12 @@ input[type=email]:focus, input[type=password]:focus { border-color: var(--ac); }
 
 /* кнопка удаления после первого щелчка: «Точно удалить?» */
 .btn.armed { color: #fff !important; background: var(--err); border-color: var(--err); animation: pulse 1.2s ease-out infinite; --c: var(--err); }
+
+/* ---------- «пиксельный океан» за главной (js/home-ocean.js) ---------- */
+.ocean-bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
+body:has(.ocean-bg)::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 88%, transparent) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 55%, color-mix(in srgb, var(--bg) 20%, transparent) 100%); }
+:root[data-theme="light"] body:has(.ocean-bg) { background-image: none; }
+.hero { grid-template-columns: minmax(0, 1fr); max-width: 680px; }
+.role-btn { min-height: 96px; border-radius: 18px; background: color-mix(in srgb, var(--card) 70%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); }

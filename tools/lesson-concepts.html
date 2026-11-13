@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Концепты урока · БитБлокнот</title>
+<!-- Черновик для выбора: три варианта страницы урока в стиле «стекло A + C» и состояния умного оглавления. Не часть сайта. -->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Segoe UI", system-ui, sans-serif; background: #d6dae0; padding: 24px; color: #15171c; }
+  h2 { font: 650 15px/1.3 inherit; margin: 30px 4px 10px; color: #3d424c; }
+  .frame { position: relative; width: 1180px; height: 720px; border-radius: 26px; overflow: hidden; isolation: isolate; background: linear-gradient(160deg,#eef1f5,#dfe4ea); }
+  .frame.dark { background: #0d0e14; color: #eceef4; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(70px); z-index: -1; }
+  .glass { background: rgba(255,255,255,.55); backdrop-filter: blur(22px) saturate(1.6); -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,.8); box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 12px 32px -14px rgba(40,50,80,.28); border-radius: 22px; }
+  .dark .glass { background: rgba(28,30,42,.5); border-color: rgba(255,255,255,.13); box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 16px 40px -16px rgba(0,0,0,.7); }
+  .ink { background: #15171c; color: #fff; } .dark .ink { background: #fff; color: #15171c; }
+  .muted { color: #6b7180; font-size: 12px; } .dark .muted { color: #9aa0ae; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 650; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 650; }
+  .ghost { background: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.9); } .dark .ghost { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.14); }
+  .ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .top { position: absolute; left: 18px; right: 18px; top: 16px; height: 58px; display: flex; align-items: center; gap: 12px; padding: 0 10px; }
+  .iconbtn { width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center; }
+  .tabs { display: flex; gap: 3px; padding: 4px; border-radius: 999px; margin: 0 auto; }
+  .tab { padding: 7px 14px; border-radius: 999px; font-size: 13px; color: #5d6370; display: flex; gap: 6px; align-items: center; } .dark .tab { color: #a9adbb; }
+  .tab.on { background: #15171c; color: #fff; } .dark .tab.on { background: #fff; color: #15171c; }
+  .toc { position: absolute; left: 18px; top: 90px; bottom: 18px; width: 268px; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .toc.rail { width: 64px; align-items: center; padding: 14px 0; }
+  .lh { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 14px; font-size: 13px; }
+  .lh.open { background: rgba(255,255,255,.7); } .dark .lh.open { background: rgba(255,255,255,.07); }
+  .lh small { display: block; color: #8a8f9c; font-size: 11px; }
+  .st { display: flex; gap: 9px; align-items: center; padding: 6px 10px 6px 34px; font-size: 12.5px; color: #5d6370; border-radius: 10px; } .dark .st { color: #a9adbb; }
+  .st.now { background: #15171c; color: #fff; } .dark .st.now { background: #fff; color: #15171c; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .stage { position: absolute; top: 90px; bottom: 18px; overflow: hidden; }
+  .card { padding: 30px 34px; }
+  .kicker { display: flex; justify-content: space-between; align-items: center; }
+  .bar { height: 6px; border-radius: 3px; background: rgba(20,23,28,.08); overflow: hidden; margin: 12px 0 18px; } .dark .bar { background: rgba(255,255,255,.1); }
+  .bar i { display: block; height: 100%; width: 66%; border-radius: 3px; background: linear-gradient(90deg,#8b7cff,#ff8fb0); }
+  h1 { font-size: 30px; letter-spacing: -.02em; margin: 0 0 12px; }
+  p { font-size: 15.5px; line-height: 1.7; margin: 0 0 12px; color: #2c3039; } .dark p { color: #d5d8e2; }
+  .term { border-bottom: 2px dotted #8b7cff; cursor: help; font-weight: 600; }
+  .tip { position: absolute; width: 250px; padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+  .illu { height: 150px; border-radius: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 16px; }
+  .lamp { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-family: monospace; }
+  .q { padding: 18px; border-radius: 18px; margin-top: 8px; }
+  .chip { padding: 9px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+  .ring { width: 54px; height: 54px; border-radius: 50%; background: conic-gradient(#8b7cff 0 62%, rgba(20,23,28,.1) 0); display: grid; place-items: center; }
+  .ring::after { content: ""; width: 42px; height: 42px; border-radius: 50%; background: #eef0f4; } .dark .ring::after { background: #1b1d27; }
+  .ring b { position: absolute; font-size: 12px; z-index: 1; }
+  .phone { width: 360px; height: 720px; border-radius: 40px; position: relative; overflow: hidden; isolation: isolate; border: 10px solid #15171c; background: linear-gradient(160deg,#eef1f5,#dfe4ea); }
+  .note { position: absolute; font-size: 12px; font-weight: 650; padding: 6px 10px; border-radius: 10px; background: #15171c; color: #fff; }
+  .row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<h2>1. «Фокус» — светлое стекло. Оглавление слева развёрнуто, шаг — узкая читаемая колонка, справа инструменты</h2>
+<div class="frame" id="f1"></div>
+
+<h2>1. «Фокус» — тёмное стекло. Ученик начал листать: оглавление само свернулось в колонку точек, открыта подсказка словарика</h2>
+<div class="frame dark" id="f1d"></div>
+
+<h2>2. «Путь» — сверху лента уроков с точками шагов (как колонки A), под ней большая карточка шага</h2>
+<div class="frame" id="f2"></div>
+
+<h2>3. «Плитки» — шаг в большой плитке, рядом плитки «время урока», «цель дня», «карточки на повтор» (как C)</h2>
+<div class="frame dark" id="f3"></div>
+
+<h2>Телефон: панель внизу (прячется при листании вниз) · лист «Содержание» · флеш-карточка · праздник в конце урока</h2>
+<div class="row" id="phones"></div>
+
+<script>
+const P = {
+  back: "M14.5 5.5L8 12l6.5 6.5", list: "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01", book: "M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2zM5 21V5",
+  flask: "M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3", pencil: "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3", check2: "M5 12.5l4.5 4.5L19 7.5",
+  cards: "M7 4h11a2 2 0 0 1 2 2v11M4 8h11a2 2 0 0 1 2 2v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z", palette: "M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-1.2-1-1.5-1-2.5 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.1-4-7.5-9-7.5z",
+  pin: "M9 4h6l-1 6 3 3H7l3-3zM12 13v7", hide: "M15 6l-6 6 6 6M20 6v12", search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4", clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+  left: "M19 12H5M11 6l-6 6 6 6", right: "M5 12h14M13 6l6 6-6 6", flame: "M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 2 1 3 2 3 4", star: "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z",
+  keyboard: "M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M8 14h8",
+};
+const ic = (k, s = "") => `<svg class="ico" viewBox="0 0 24 24" style="${s}"><path d="${P[k]}"/></svg>`;
+const blobs = dark => dark
+  ? `<div class="blob" style="width:480px;height:480px;background:#5b46ff;left:180px;top:80px;opacity:.55"></div><div class="blob" style="width:420px;height:420px;background:#ff4f88;right:120px;top:-160px;opacity:.42"></div><div class="blob" style="width:400px;height:400px;background:#17cf95;right:-100px;bottom:-90px;opacity:.38"></div>`
+  : `<div class="blob" style="width:460px;height:460px;background:#cbc3ff;left:260px;top:-140px"></div><div class="blob" style="width:420px;height:420px;background:#ffd5bd;right:-80px;bottom:-90px"></div><div class="blob" style="width:320px;height:320px;background:#bdeedc;left:-80px;bottom:30px"></div>`;
+const topBar = (on = "Урок") => `<div class="top glass">
+  <div class="iconbtn ghost">${ic("back")}</div>
+  <div><div style="font-weight:700;font-size:15px">Тема 5 · Двоичный код</div><div class="muted">освоено 42%</div></div>
+  <div class="tabs glass">${[["Урок", "book"], ["Тренажёр", "flask"], ["Задачи", "pencil"], ["Тест", "check2"], ["Карточки", "cards"]].map(([t, k]) => `<span class="tab ${t === on ? "on" : ""}">${ic(k, "width:15px;height:15px")}${t}</span>`).join("")}</div>
+  <div class="iconbtn ghost">${ic("search")}</div><div class="iconbtn ghost">${ic("palette")}</div></div>`;
+const LESSONS = [["Алфавит и коды", 4, 4], ["Коды вокруг нас", 3, 4], ["Равномерные коды", 0, 4], ["Двоичные числа", 0, 4]];
+const COLORS = ["#8b7cff", "#56c896", "#f6a463", "#ff8fb0"];
+const tocFull = () => `<nav class="toc glass">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px 8px"><b style="font-size:13px">Содержание</b><span style="display:flex;gap:4px"><span class="iconbtn" style="width:28px;height:28px">${ic("pin", "width:15px;height:15px")}</span><span class="iconbtn" style="width:28px;height:28px">${ic("hide", "width:15px;height:15px")}</span></span></div>
+  ${LESSONS.map(([t, d, n], i) => `<div class="lh ${i === 1 ? "open" : ""}"><span class="dot" style="background:${COLORS[i]};margin-top:4px;${d === n ? "" : "opacity:.45"}"></span><span style="flex:1"><small>Урок ${i + 1}</small>${t}</span><span class="muted">${d}/${n}</span></div>` +
+    (i === 1 ? ["Азбука Морзе", "Шрифт Брайля", "Штрихкод", "QR-код"].map((s, k) => `<div class="st ${k === 3 ? "now" : ""}">${k < 3 ? ic("check2", "width:14px;height:14px;color:#3aa776") : `<span class="dot" style="background:#c6f432"></span>`}${s}</div>`).join("") : "")).join("")}
+  <div style="flex:1"></div>
+  <div class="glass" style="padding:12px;border-radius:16px;display:flex;gap:10px;align-items:center"><div class="ring" style="position:relative"><b>6/10</b></div><div><b style="font-size:13px">Цель дня</b><div class="muted">ещё 4 минуты</div></div></div>
+</nav>`;
+const tocRail = () => `<nav class="toc glass rail">
+  <div class="iconbtn ghost" style="margin-bottom:6px">${ic("list")}</div>
+  ${LESSONS.map(([t, d, n], i) => `<div style="display:flex;flex-direction:column;gap:5px;align-items:center;padding:6px 0">${Array.from({ length: n }, (_, k) => `<span class="dot" style="background:${COLORS[i]};${k < d ? "" : "opacity:.3"};${i === 1 && k === 3 ? "width:13px;height:13px;box-shadow:0 0 0 3px rgba(198,244,50,.6)" : ""}"></span>`).join("")}</div>`).join("")}
+  <div style="flex:1"></div><div class="ring" style="position:relative;transform:scale(.8)"><b>6</b></div></nav>`;
+const step = (dark, extra = "") => `
+  <div class="kicker"><span class="pill" style="background:${dark ? "rgba(139,124,255,.22)" : "#e9e5ff"};color:${dark ? "#c9c0ff" : "#4b3fc4"}">Урок 2 из 4 · шаг 4 из 4</span><span class="muted" style="display:flex;gap:6px;align-items:center">${ic("clock", "width:14px;height:14px")}урок ~6 мин</span></div>
+  <div class="bar"><i></i></div>
+  <h1>QR-код</h1>
+  <p><span class="term">QR-код</span> — это двумерный <span class="term">штрихкод</span>: информация записана не в полосках, а в квадратиках. Каждый квадратик — это один <span class="term">бит</span>: тёмный — 1, светлый — 0.</p>
+  ${extra}
+  <div class="illu ${dark ? "" : ""}" style="background:${dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.6)"}">${[1, 0, 1, 1, 0, 1, 0, 0].map((b, i) => `<span class="lamp" style="background:${b ? COLORS[i % 4] : (dark ? "rgba(255,255,255,.08)" : "#e7e9ee")};color:${b ? "#15171c" : "#8a8f9c"}">${b}</span>`).join("")}</div>
+  <div class="q glass"><div class="muted" style="margin-bottom:8px">Проверь себя · соедини пары</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <span class="chip" style="background:${dark ? "rgba(139,124,255,.2)" : "#e9e5ff"}">Азбука Морзе</span><span class="chip" style="background:${dark ? "rgba(139,124,255,.2)" : "#e9e5ff"}">телеграф</span>
+      <span class="chip" style="background:${dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.8)"}">QR-код</span><span class="chip" style="background:${dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.8)"}">ссылка для телефона</span></div></div>
+  <div style="display:flex;justify-content:space-between;margin-top:18px"><span class="btn ghost">${ic("left")}Назад</span><span class="muted" style="align-self:center;display:flex;gap:6px;align-items:center">${ic("keyboard", "width:14px;height:14px")}стрелки или свайп</span><span class="btn ink">Следующий урок ${ic("right")}</span></div>`;
+const tools = () => `<div style="position:absolute;right:18px;top:90px;display:flex;flex-direction:column;gap:10px">
+  ${[["book", "Шпаргалка"], ["search", "Словарик"], ["cards", "Карточки · 5"]].map(([k, t]) => `<div class="glass" style="padding:10px 14px;border-radius:16px;display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600">${ic(k)}${t}</div>`).join("")}</div>`;
+
+document.getElementById("f1").innerHTML = blobs(false) + topBar() + tocFull() +
+  `<div class="stage glass card" style="left:304px;right:210px">${step(false)}</div>` + tools();
+
+document.getElementById("f1d").innerHTML = blobs(true) + topBar() + tocRail() +
+  `<div class="stage glass card" style="left:100px;right:210px">${step(true)}</div>` + tools() +
+  `<div class="tip glass" style="left:330px;top:300px"><b>Бит</b> — наименьшая единица информации: один двоичный разряд, 0 или 1.<div class="muted" style="margin-top:6px">Тема 4 · Единицы информации</div></div>
+   <div class="note" style="left:20px;top:620px">листаешь вниз → колонка точек</div>`;
+
+document.getElementById("f2").innerHTML = blobs(false) + topBar() +
+  `<div class="glass" style="position:absolute;left:18px;right:18px;top:90px;height:110px;padding:14px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:22px">
+    ${LESSONS.map(([t, d, n], i) => `<div style="${i === 1 ? "" : ""}"><div style="display:flex;justify-content:space-between"><span class="muted">Урок ${i + 1}</span><span class="muted">${d}/${n}</span></div><b style="font-size:14px;display:block;margin:4px 0 10px">${t}</b><div style="display:flex;gap:6px;align-items:center">${Array.from({ length: n }, (_, k) => `<span class="dot" style="width:22px;height:8px;border-radius:4px;background:${COLORS[i]};${k < d ? "" : "opacity:.25"};${i === 1 && k === 3 ? "background:#15171c;opacity:1" : ""}"></span>`).join("")}</div></div>`).join("")}
+  </div>
+  <svg style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none"><path d="M300 150h18M575 150h18M850 150h18" stroke="#9aa3b2" stroke-width="2" stroke-dasharray="4 5"/></svg>
+  <div class="stage glass card" style="left:150px;right:150px;top:216px">${step(false)}</div>`;
+
+document.getElementById("f3").innerHTML = blobs(true) + topBar() +
+  `<div class="stage" style="left:18px;right:18px;display:grid;grid-template-columns:1.7fr 1fr;grid-template-rows:auto auto 1fr;gap:14px">
+    <div class="glass card" style="grid-row:span 3;overflow:hidden">${step(true)}</div>
+    <div class="glass" style="padding:18px;display:flex;gap:14px;align-items:center"><div class="ring" style="position:relative;transform:scale(1.2)"><b>6/10</b></div><div><b>Цель дня</b><div class="muted">6 из 10 минут · серия 5 дней</div></div></div>
+    <div class="glass" style="padding:18px"><span class="muted">Этот урок</span><div style="display:flex;gap:18px;margin-top:8px"><div><b style="font-size:26px">4:12</b><div class="muted">минут</div></div><div><b style="font-size:26px">3/4</b><div class="muted">шага</div></div><div><b style="font-size:26px">100%</b><div class="muted">с первой попытки</div></div></div></div>
+    <div class="glass" style="padding:18px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between"><b>Карточки на повтор</b><span class="pill" style="background:rgba(255,143,176,.2);color:#ffb3c9">5</span></div>
+      ${[["Бит", "наименьшая единица…"], ["Кодовая таблица", "каждому символу — код…"], ["Штрихкод", "полоски разной ширины…"]].map(([a, b]) => `<div class="glass" style="padding:12px 14px;border-radius:14px;display:flex;justify-content:space-between"><b style="font-size:13px">${a}</b><span class="muted">${b}</span></div>`).join("")}
+      <span class="btn ink" style="align-self:flex-start">Повторить</span></div>
+  </div>`;
+
+const phone = (inner, dark) => `<div class="phone" style="${dark ? "background:#0d0e14;color:#eceef4" : ""}">${blobs(dark).replace(/480px|460px|420px|400px/g, "260px")}${inner}</div>`;
+const pTop = `<div class="glass" style="position:absolute;left:10px;right:10px;top:10px;height:52px;display:flex;align-items:center;gap:8px;padding:0 8px"><div class="iconbtn ghost" style="width:34px;height:34px">${ic("back")}</div><b style="font-size:14px;flex:1">Двоичный код</b><div class="iconbtn ghost" style="width:34px;height:34px">${ic("search")}</div></div>`;
+const pStep = `<div class="glass" style="position:absolute;left:10px;right:10px;top:72px;bottom:10px;padding:18px;overflow:hidden">
+  <span class="pill" style="background:#e9e5ff;color:#4b3fc4">шаг 4 из 4</span><div class="bar"><i></i></div><h1 style="font-size:24px">QR-код</h1>
+  <p style="font-size:14.5px"><span class="term">QR-код</span> — двумерный штрихкод: информация в квадратиках. Тёмный — 1, светлый — 0.</p>
+  <div class="illu" style="background:rgba(255,255,255,.6);height:110px">${[1, 0, 1, 1, 0].map((b, i) => `<span class="lamp" style="width:36px;height:36px;background:${b ? COLORS[i % 4] : "#e7e9ee"}">${b}</span>`).join("")}</div></div>`;
+const pBar = (hidden) => `<div class="glass" style="position:absolute;left:12px;right:12px;bottom:${hidden ? -80 : 14}px;height:64px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:24px">
+  <div class="iconbtn ink" style="width:40px;height:40px">${ic("list")}</div>
+  <div style="flex:1"><b style="font-size:13px">Урок 2 · шаг 4/4</b><div style="display:flex;gap:4px;margin-top:5px">${[1, 1, 1, 2].map(s => `<span class="dot" style="width:18px;height:6px;border-radius:3px;background:${s === 2 ? "#15171c" : "#56c896"}"></span>`).join("")}</div></div>
+  <div class="iconbtn ghost" style="width:40px;height:40px">${ic("book")}</div><div class="iconbtn ghost" style="width:40px;height:40px">${ic("cards")}</div></div>`;
+const sheet = `<div style="position:absolute;inset:0;background:rgba(20,23,28,.25)"></div><div class="glass" style="position:absolute;left:0;right:0;bottom:0;height:470px;border-radius:28px 28px 0 0;padding:12px 14px">
+  <div style="width:44px;height:5px;border-radius:3px;background:#b9bec8;margin:0 auto 12px"></div><b>Содержание темы</b>
+  ${LESSONS.map(([t, d, n], i) => `<div class="lh ${i === 1 ? "open" : ""}" style="margin-top:6px"><span class="dot" style="background:${COLORS[i]};margin-top:4px"></span><span style="flex:1"><small>Урок ${i + 1}</small>${t}</span><span class="muted">${d}/${n}</span></div>` + (i === 1 ? ["Азбука Морзе", "Шрифт Брайля", "Штрихкод", "QR-код"].map((s, k) => `<div class="st ${k === 3 ? "now" : ""}">${s}</div>`).join("") : "")).join("")}</div>`;
+const flash = `<div style="position:absolute;left:24px;right:24px;top:110px;height:330px;perspective:900px"><div class="glass" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transform:rotateY(-14deg);border-radius:28px">
+  <span class="pill" style="background:#ffe1ec;color:#b1325f">карточка 3 из 8</span><b style="font-size:28px">Кодовая таблица</b><span class="muted">нажми, чтобы перевернуть</span></div></div>
+  <div style="position:absolute;left:24px;right:24px;top:470px;display:flex;gap:10px"><span class="btn ghost" style="flex:1;justify-content:center">Повторить</span><span class="btn ink" style="flex:1;justify-content:center">Знаю</span></div>
+  <div class="muted" style="position:absolute;left:0;right:0;top:540px;text-align:center">Знаю → вернётся через 3 дня</div>`;
+const party = `<div class="glass" style="position:absolute;left:16px;right:16px;top:120px;padding:24px 18px;text-align:center;border-radius:28px">
+  <div style="display:flex;justify-content:center;gap:10px;margin-bottom:10px">${["#8b7cff", "#ff8fb0", "#f6a463", "#56c896", "#60a5fa"].map((c, i) => `<span style="color:${c};transform:translateY(${[8, -6, 4, -10, 6][i]}px) rotate(${i * 20}deg)">${ic("star", "width:26px;height:26px")}</span>`).join("")}</div>
+  <b style="font-size:22px">Урок пройден!</b><div class="muted" style="margin:6px 0 16px">«Коды вокруг нас»</div>
+  <div style="display:flex;justify-content:space-around;margin-bottom:18px"><div><b style="font-size:22px">5:40</b><div class="muted">минут</div></div><div><b style="font-size:22px">4/4</b><div class="muted">шага</div></div><div><b style="font-size:22px">3</b><div class="muted">с 1-й попытки</div></div></div>
+  <div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:16px"><div class="ring" style="position:relative;background:conic-gradient(#56c896 0 100%,transparent 0)"><b>10/10</b></div><b style="font-size:13px;text-align:left">Цель дня выполнена<br><span class="muted">серия 6 дней</span></b></div>
+  <span class="btn ink">Следующий урок ${ic("right")}</span></div>`;
+document.getElementById("phones").innerHTML =
+  phone(pTop + pStep + pBar(false)) + phone(pTop + pStep + sheet) + phone(pTop + flash) + phone(pTop + party, true);
+// адрес вида #f2 показывает только один макет (браузеру легче рисовать много стекла по одному)
+if (location.hash) {
+  const id = location.hash.slice(1);
+  document.querySelectorAll(".frame, #phones, h2").forEach(e => { e.style.display = "none"; });
+  const el = document.getElementById(id);
+  if (el) { el.style.display = ""; el.previousElementSibling.style.display = ""; }
+}
+</script>
+</body>
+</html>

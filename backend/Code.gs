@@ -50,6 +50,7 @@ function doPost(e) {
     var seen = rid && cache.get(rid);
     if (seen) return json(JSON.parse(seen));
     var res = route(req);
+    SpreadsheetApp.flush();   // записать всё в таблицу до того, как отпустим очередь: следующий запрос сразу увидит изменения
     if (rid) cache.put(rid, JSON.stringify(res), 600);
     return json(res);
   } catch (err) {

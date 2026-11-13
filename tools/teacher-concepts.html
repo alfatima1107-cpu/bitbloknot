@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Концепты кабинета учителя · БитБлокнот</title>
+<!-- Черновик для выбора: три варианта кабинета учителя в спокойном стиле (без стекла), по референсу Employee Management Dashboard.
+     Адрес вида #t2 показывает только один макет. Не часть сайта. -->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Segoe UI", system-ui, sans-serif; background: #dfe2e7; padding: 24px; color: #1d2027; }
+  h2 { font: 650 15px/1.3 inherit; margin: 30px 4px 10px; color: #3d424c; }
+  .frame { position: relative; width: 1240px; height: 760px; border-radius: 26px; overflow: hidden; background: #f3f4f7; display: flex; gap: 14px; padding: 16px; }
+  .card { background: #fff; border: 1px solid #e6e8ee; border-radius: 20px; box-shadow: 0 1px 2px rgba(20,25,40,.04); }
+  .muted { color: #7a808d; font-size: 12.5px; }
+  .ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .rail { width: 60px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 0; }
+  .ri { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; color: #6b7180; }
+  .ri.on { background: #eef0f6; color: #1d2027; }
+  .main { flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .top { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+  .tabs { display: flex; gap: 4px; }
+  .tab { display: flex; gap: 6px; align-items: center; padding: 8px 14px; border-radius: 999px; font-size: 13px; color: #6b7180; border: 1px solid transparent; }
+  .tab.on { background: #fff; color: #1d2027; border-color: #e6e8ee; box-shadow: 0 1px 3px rgba(20,25,40,.06); }
+  .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; border: 2px solid #fff; flex: none; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #fff; border: 1px solid #e3e6ec; }
+  .btn.dark { background: #2b2f3a; color: #f4f5f8; border-color: #2b2f3a; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 650; }
+  .h { font-size: 21px; font-weight: 650; letter-spacing: -.01em; }
+  .grid-cal { display: grid; grid-template-columns: 190px repeat(14, 1fr); }
+  .gc { height: 46px; border-right: 1px solid #eef0f4; border-bottom: 1px solid #eef0f4; position: relative; }
+  .gh { height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: #8a8f9c; border-bottom: 1px solid #eef0f4; }
+  .gh b { font-size: 12px; color: #3d424c; }
+  .we { background: repeating-linear-gradient(135deg, #f3f4f7 0 5px, #e9ebf0 5px 6px); }
+  .bar { position: absolute; top: 8px; bottom: 8px; border-radius: 10px; display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 11.5px; font-weight: 650; z-index: 2; white-space: nowrap; overflow: hidden; }
+  .stu { display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 46px; border-bottom: 1px solid #eef0f4; font-size: 13px; }
+  .stu small { display: block; color: #8a8f9c; font-size: 11px; }
+  .ring { --p: 50; width: 46px; height: 46px; border-radius: 50%; background: conic-gradient(var(--c,#7b6cf6) calc(var(--p)*1%), #eceef3 0); display: grid; place-items: center; position: relative; flex: none; }
+  .ring::after { content: ""; position: absolute; inset: 5px; background: #fff; border-radius: 50%; }
+  .ring b { position: relative; z-index: 1; font-size: 11px; }
+  .heat td { width: 46px; height: 34px; text-align: center; font-size: 11.5px; font-weight: 650; border-radius: 8px; }
+  table.heat { border-collapse: separate; border-spacing: 4px; }
+  .k { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+</style>
+</head>
+<body>
+
+<h2>1. «Журнал недели» — как в референсе: ученики × дни, цветные полоски — чем ученик занимался; сегодня отмечено линией</h2>
+<div class="frame" id="t1"></div>
+
+<h2>2. «Карта освоения» — ученики × 12 тем, мягкая тепловая карта; справа карточка выбранного ученика</h2>
+<div class="frame" id="t2"></div>
+
+<h2>3. «Карточки учеников» — сверху цифры класса, ниже карточки с кольцом прогресса и меткой «нужна помощь»</h2>
+<div class="frame" id="t3"></div>
+
+<script>
+const P = {
+  home: "M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z", users: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
+  chart: "M3 3v18h18M7 16v-4M12 16V8M17 16v-7", print: "M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z",
+  gear: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", plus: "M12 5v14M5 12h14", search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3", cal: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+  alert: "M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z", flame: "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3.3.3 1.6 1.5 2.8 2.5 2.8z",
+  book: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z", check: "M20 6L9 17l-5-5", flask: "M10 2v7.5L4.3 19A2 2 0 0 0 6 22h12a2 2 0 0 0 1.7-3L14 9.5V2M8.5 2h7",
+  test: "M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11", key: "M15.5 7.5l3 3L22 7l-3-3M21 2l-9.6 9.6M7.5 21a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11z", right: "M5 12h14M12 5l7 7-7 7",
+  bulb: "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4",
+};
+const ic = (k, s = "") => `<svg class="ico" viewBox="0 0 24 24" style="${s}"><path d="${P[k]}"/></svg>`;
+const S = [["Аня Смирнова", "#e98aa8"], ["Даниил Ким", "#6aa6f0"], ["Петя Иванов", "#f2a65e"], ["Лиза Орлова", "#7b6cf6"], ["Тимур Ахмедов", "#4fbf8f"], ["Маша Белова", "#d38be0"], ["Олег Седов", "#5fb7c9"], ["Вика Лис", "#e7b54a"], ["Артём Жуков", "#8a93a6"]];
+const ini = n => n.split(" ").map(x => x[0]).join("");
+const av = ([n, c], s = "") => `<span class="av" style="background:${c};${s}">${ini(n)}</span>`;
+const rail = on => `<div class="card rail"><div class="ri" style="background:#2b2f3a;color:#fff">${ic("book")}</div><div style="height:6px"></div>${["home", "users", "chart", "print", "cal"].map((k, i) => `<div class="ri ${i === on ? "on" : ""}">${ic(k)}</div>`).join("")}<div style="flex:1"></div><div class="ri">${ic("gear")}</div></div>`;
+const topBar = on => `<div class="top"><div class="tabs">${[["home", "Обзор"], ["users", "Ученики"], ["chart", "Отчёты"], ["print", "Карточки входа"]].map(([k, t]) => `<span class="tab ${t === on ? "on" : ""}">${ic(k, "width:15px;height:15px")}${t}</span>`).join("")}</div>
+  <div style="flex:1"></div><span class="tab" style="border-color:#e6e8ee;background:#fff">${ic("search", "width:15px;height:15px")}Найти ученика</span>
+  <div style="display:flex">${S.slice(0, 4).map((s, i) => av(s, `margin-left:${i ? -8 : 0}px`)).join("")}<span class="av" style="background:#eef0f4;color:#5d6370;margin-left:-8px">+20</span></div>
+  <span class="btn dark">${ic("plus", "width:15px;height:15px")}Добавить учеников</span></div>`;
+const classBar = `<div style="display:flex;align-items:center;gap:12px"><div class="h">7Б</div><span class="pill" style="background:#eef0f6;color:#4b505c">${ic("key", "width:12px;height:12px")}код класса 154463</span><span class="muted">24 ученика</span></div>`;
+
+// ---------- 1. журнал недели ----------
+const days = ["Пн 10", "Вт 11", "Ср 12", "Чт 13", "Пт 14", "Сб 15", "Вс 16", "Пн 17", "Вт 18", "Ср 19", "Чт 20", "Пт 21", "Сб 22", "Вс 23"];
+const BARS = [[0, 1, 3, "урок · Двоичный код", "#e9e5ff", "#5a4bd1"], [0, 8, 2, "тест 5 · 92%", "#dff3ea", "#227a55"], [1, 0, 2, "тренажёр", "#fdebd9", "#b2621c"], [1, 4, 1, "задачи", "#e3eefc", "#2c62b8"],
+  [2, 2, 2, "урок · Единицы", "#e9e5ff", "#5a4bd1"], [3, 0, 4, "урок · Текст", "#e9e5ff", "#5a4bd1"], [3, 7, 2, "тест 6 · 78%", "#dff3ea", "#227a55"], [4, 1, 1, "задачи", "#e3eefc", "#2c62b8"],
+  [5, 3, 3, "карточки и повтор", "#fbe4ee", "#b23a68"], [6, 0, 1, "задачи", "#e3eefc", "#2c62b8"], [7, 8, 3, "урок · Звук", "#e9e5ff", "#5a4bd1"], [8, 2, 2, "тест 4 · 54%", "#fde7e2", "#b9472c"]];
+let cal = `<div class="grid-cal"><div class="gh" style="align-items:flex-start;padding-left:12px">Ученики</div>${days.map((d, i) => `<div class="gh ${i === 3 ? "" : ""}"><span>${d.split(" ")[0]}</span><b style="${i === 3 ? "background:#2b2f3a;color:#fff;border-radius:7px;padding:1px 6px" : ""}">${d.split(" ")[1]}</b></div>`).join("")}`;
+S.forEach((s, r) => {
+  cal += `<div class="stu">${av(s)}<div>${s[0]}<small>${["Двоичный код", "Файлы", "Единицы", "Текст", "Задачи", "Повтор", "Сети", "Звук", "Изображения"][r]}</small></div></div>`;
+  days.forEach((d, c) => {
+    const we = c === 5 || c === 6 || c === 12 || c === 13;
+    const b = BARS.find(x => x[0] === r && x[1] === c);
+    cal += `<div class="gc ${we ? "we" : ""}">${c === 3 ? `<div style="position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed #7b6cf6;opacity:.55"></div>` : ""}${b ? `<div class="bar" style="left:4px;width:calc(${b[2] * 100}% - 8px);background:${b[4]};color:${b[5]}">${b[3]}</div>` : ""}</div>`;
+  });
+});
+cal += `</div>`;
+document.getElementById("t1").innerHTML = rail(0) + `<div class="main">${topBar("Обзор")}
+  <div class="card" style="padding:16px 18px;flex:1;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">${classBar}<div style="display:flex;gap:8px"><span class="btn">${ic("cal", "width:15px;height:15px")}10–23 ноября</span><span class="btn">Все занятия</span></div></div>${cal}</div>
+  <div style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:14px;height:190px">
+    <div class="card" style="padding:16px"><div style="display:flex;justify-content:space-between"><b>Ближайшее</b><span class="muted">все</span></div>
+      <div style="margin-top:10px;padding:12px;border-radius:14px;background:#fdf0cf"><b style="font-size:13px">Тест по теме 6 «Единицы»</b><div class="muted" style="color:#8a6a12">пятница · сдали 9 из 24</div></div>
+      <div style="margin-top:8px;padding:12px;border-radius:14px;background:#f3f4f7"><b style="font-size:13px">Повторение темы 2</b><div class="muted">у 6 учеников подошёл срок</div></div></div>
+    <div class="card" style="padding:16px"><div style="display:flex;justify-content:space-between"><b>Нужна помощь</b><span class="muted">все</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">${[[S[8], "тест 4 — 54%"], [S[2], "путает биты и байты"], [S[6], "не заходил 5 дней"], [S[4], "3 ошибки подряд"]].map(([s, t]) => `<div style="padding:10px;border-radius:14px;border:1px solid #eef0f4;display:flex;gap:8px;align-items:center">${av(s)}<div style="min-width:0"><b style="font-size:12.5px">${s[0].split(" ")[0]}</b><div class="muted" style="font-size:11px">${t}</div></div></div>`).join("")}</div></div>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column"><b>Подсказка дня</b><div style="margin:10px 0;padding:12px;border-radius:14px;background:#eef0f6;font-size:13px;line-height:1.5">${ic("bulb", "width:15px;height:15px;vertical-align:-3px")} Треть класса путает <b>биты и байты</b>. Начните урок с тренажёра «Лестница единиц».</div><span class="btn" style="align-self:flex-start">Открыть тему 6 ${ic("right", "width:14px;height:14px")}</span></div>
+  </div></div>`;
+
+// ---------- 2. карта освоения ----------
+const heat = v => v === null ? ["#f3f4f7", "#b0b5c0", ""] : v >= 85 ? ["#cdeedd", "#1d6b48", "5"] : v >= 70 ? ["#e0f2e8", "#2d7a55", "4"] : v >= 40 ? ["#fdf0cf", "#8a6a12", v + "%"] : v > 0 ? ["#fde7e2", "#b9472c", v + "%"] : ["#f3f4f7", "#b0b5c0", "·"];
+const VALS = S.map((_, r) => Array.from({ length: 12 }, (_, c) => c > 7 ? null : Math.max(0, Math.min(100, Math.round(95 - r * 9 - c * 7 + ((r * 7 + c * 3) % 5) * 9)))));
+document.getElementById("t2").innerHTML = rail(1) + `<div class="main">${topBar("Ученики")}
+  <div style="display:grid;grid-template-columns:1fr 330px;gap:14px;flex:1;min-height:0">
+    <div class="card" style="padding:16px 18px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center">${classBar}<div style="display:flex;gap:6px;align-items:center" class="muted">
+        ${[["#cdeedd", "оценка 5–4"], ["#fdf0cf", "в процессе"], ["#fde7e2", "трудно"], ["#f3f4f7", "не начато"]].map(([c, t]) => `<span style="display:inline-flex;gap:5px;align-items:center;margin-left:8px"><i style="width:12px;height:12px;border-radius:4px;background:${c}"></i>${t}</span>`).join("")}</div></div>
+      <table class="heat" style="margin-top:12px;width:100%"><tr><td style="width:190px"></td>${Array.from({ length: 12 }, (_, i) => `<td class="muted" style="height:24px">${i + 1}</td>`).join("")}<td class="muted">курс</td></tr>
+      ${S.map((s, r) => `<tr style="${r === 2 ? "outline:2px solid #7b6cf6;outline-offset:-1px;border-radius:12px" : ""}"><td style="text-align:left"><div style="display:flex;gap:10px;align-items:center;font-weight:500">${av(s)}${s[0]}</div></td>${VALS[r].map(v => { const [bg, fg, t] = heat(v); return `<td style="background:${bg};color:${fg}">${t}</td>`; }).join("")}<td><b style="font-size:12px">${Math.round(VALS[r].filter(v => v !== null).reduce((a, b) => a + b, 0) / 12)}%</b></td></tr>`).join("")}</table>
+    </div>
+    <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:12px;align-items:center">${av(S[2], "width:48px;height:48px;font-size:15px")}<div><b style="font-size:16px">Петя Иванов</b><div class="muted">личный код 5743 · был сегодня</div></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${[["136", "задач решено"], ["71%", "с 1-й попытки"], ["6 из 12", "тем сдано"], ["5 дней", "серия"]].map(([k, t]) => `<div style="padding:12px;border-radius:14px;background:#f5f6f9"><div style="font-size:19px;font-weight:700">${k}</div><div class="muted">${t}</div></div>`).join("")}</div>
+      <b style="font-size:13px">Частые ошибки</b>
+      ${[["Путает биты и байты", 7, "#e98aa8"], ["Забывает про ×8", 4, "#f2a65e"], ["Мощность вместо i", 2, "#7b6cf6"]].map(([t, n, c]) => `<div><div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${t}</span><span class="muted">${n} раз</span></div><div style="height:6px;border-radius:3px;background:#eef0f4;margin-top:5px"><div style="width:${n * 12}%;height:6px;border-radius:3px;background:${c}"></div></div></div>`).join("")}
+      <div style="flex:1"></div><div style="display:flex;gap:8px"><span class="btn" style="flex:1;justify-content:center">${ic("print", "width:15px;height:15px")}Карточка</span><span class="btn dark" style="flex:1;justify-content:center">Подробнее</span></div>
+    </div>
+  </div></div>`;
+
+// ---------- 3. карточки учеников ----------
+const KPI = [["24", "ученика", "#7b6cf6", "users"], ["68%", "средний прогресс", "#4fbf8f", "chart"], ["19", "заходили на этой неделе", "#6aa6f0", "cal"], ["3", "нужна помощь", "#e98aa8", "alert"]];
+document.getElementById("t3").innerHTML = rail(1) + `<div class="main">${topBar("Ученики")}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px">${classBar}<div style="display:flex;gap:8px"><span class="btn">Все</span><span class="btn" style="background:#2b2f3a;color:#fff;border-color:#2b2f3a">Нужна помощь · 3</span><span class="btn">Не заходили</span></div></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">${KPI.map(([k, t, c, i]) => `<div class="card" style="padding:16px;display:flex;gap:12px;align-items:center"><span style="width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:${c}22;color:${c}">${ic(i)}</span><div><div class="k">${k}</div><div class="muted">${t}</div></div></div>`).join("")}</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;flex:1;align-content:start">${S.slice(0, 8).map((s, i) => {
+    const p = [92, 78, 54, 85, 40, 66, 22, 71][i], help = [8, 2, 6].includes(i) || i === 6;
+    return `<div class="card" style="padding:16px;${i === 6 ? "border-color:#f3c2cf" : ""}"><div style="display:flex;gap:12px;align-items:center">${av(s, "width:40px;height:40px;font-size:13px")}<div style="flex:1;min-width:0"><b style="font-size:13.5px">${s[0]}</b><div class="muted">${["был сегодня", "вчера", "сегодня", "сегодня", "2 дня назад", "сегодня", "5 дней назад", "вчера"][i]}</div></div><div class="ring" style="--p:${p};--c:${p >= 70 ? "#4fbf8f" : p >= 40 ? "#e7b54a" : "#e98aa8"}"><b>${p}%</b></div></div>
+      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">${i === 6 ? `<span class="pill" style="background:#fde7e2;color:#b9472c">${ic("alert", "width:12px;height:12px")}давно не заходил</span>` : i === 2 ? `<span class="pill" style="background:#fdf0cf;color:#8a6a12">путает биты и байты</span>` : `<span class="pill" style="background:#eef0f6;color:#4b505c">${ic("flame", "width:12px;height:12px")}серия ${[5, 2, 1, 8, 0, 3, 0, 4][i]}</span>`}<span class="pill" style="background:#f3f4f7;color:#5d6370">тем сдано: ${[7, 5, 3, 6, 2, 4, 1, 5][i]}</span></div>
+      <div style="height:6px;border-radius:3px;background:#eef0f4;margin-top:12px"><div style="height:6px;border-radius:3px;width:${p}%;background:${s[1]}"></div></div></div>`;
+  }).join("")}</div></div>`;
+
+if (location.hash) {
+  const id = location.hash.slice(1);
+  document.querySelectorAll(".frame, h2").forEach(e => { e.style.display = "none"; });
+  const el = document.getElementById(id);
+  if (el) { el.style.display = ""; el.previousElementSibling.style.display = ""; }
+}
+</script>
+</body>
+</html>
