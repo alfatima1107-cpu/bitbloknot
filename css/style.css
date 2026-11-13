@@ -286,41 +286,23 @@ input[type=range] { accent-color: var(--ac); }
 }
 
 /* ---------- главная страница (лендинг) ---------- */
-.hero { max-width: 640px; margin: 6vh 0 40px; }
-.hero h1 { font-size: clamp(1.9rem, 5vw, 3.1rem); margin: 6px 0 14px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px; align-items: center; margin: 4vh 0 36px; }
+.hero h1 { font-size: clamp(1.8rem, 4.5vw, 2.8rem); margin: 6px 0 14px; }
 .hero-tag { color: var(--ac); font-size: .85rem; letter-spacing: .05em; }
-.hero-lead { font-size: 1.1rem; color: var(--tx); opacity: .82; max-width: 580px; }
+.hero-lead { font-size: 1.08rem; color: var(--mut); max-width: 560px; }
 .hero-lead b { color: var(--tx); }
-.role-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 26px 0 14px; }
-/* «стеклянные» карточки поверх океана: полупрозрачный фон темы + размытие */
-.role-btn { display: flex; gap: 16px; align-items: center; min-height: 104px; padding: 20px 22px; border-radius: 16px;
-  border: 1.5px solid color-mix(in srgb, var(--line) 80%, transparent);
-  background: color-mix(in srgb, var(--card) 66%, transparent); color: var(--tx);
-  -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
-  box-shadow: 0 10px 30px -14px rgb(0 0 0 / .45);
-  transition: border-color .15s, transform .15s, background .15s; }
-.role-btn:hover { border-color: var(--ac); text-decoration: none; transform: translateY(-3px); background: color-mix(in srgb, var(--card) 80%, transparent); }
-.role-btn:focus-visible { outline: 3px solid var(--ac); outline-offset: 3px; }
-.role-btn b { display: block; font-size: 1.35rem; line-height: 1.25; }
-.role-btn .small { display: block; line-height: 1.35; margin-top: 2px; color: var(--tx); opacity: .75; }
-.role-icon { flex-shrink: 0; width: 60px; height: 60px; border-radius: 14px; background: color-mix(in srgb, var(--ac) 16%, transparent); }
-#btn-student { border-color: var(--ac); background: color-mix(in srgb, var(--acb) 72%, transparent); }
-#btn-student:hover { background: color-mix(in srgb, var(--acb) 88%, transparent); }
+.role-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0 12px; max-width: 560px; }
+.role-btn { display: flex; gap: 14px; align-items: center; padding: 16px 18px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--tx); transition: border-color .15s, transform .1s; }
+.role-btn:hover { border-color: var(--ac); text-decoration: none; transform: translateY(-2px); }
+.role-btn b { display: block; font-size: 1.15rem; }
+.role-btn .small { display: block; line-height: 1.3; }
+.role-icon { font-size: 2.2rem; }
+#btn-student { border-color: var(--ac); background: var(--acb); }
 .soon-btn { opacity: .7; }
-/* фон главной: CSS-градиент (запасной), над ним холст океана, над холстом — вуаль для читаемости текста */
-.ocean-sky, .ocean-veil, .ocean-canvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-.ocean-canvas { width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.2s ease; }
-.ocean-canvas.on { opacity: 1; }
-.ocean-sky { background:
-  radial-gradient(60% 50% at 85% 75%, color-mix(in srgb, var(--c1) 28%, transparent), transparent 70%),
-  radial-gradient(50% 40% at 60% 100%, color-mix(in srgb, var(--c6) 24%, transparent), transparent 70%),
-  radial-gradient(40% 35% at 100% 30%, color-mix(in srgb, var(--c2) 18%, transparent), transparent 70%),
-  var(--bg); }
-.ocean-veil { background:
-  linear-gradient(90deg, color-mix(in srgb, var(--bg) 86%, transparent) 0%, color-mix(in srgb, var(--bg) 72%, transparent) 42%, color-mix(in srgb, var(--bg) 18%, transparent) 100%),
-  linear-gradient(180deg, color-mix(in srgb, var(--bg) 40%, transparent) 0%, transparent 30%); }
-/* порядок слоёв при одинаковом z-index задаёт DOM: холст вставляется первым в body */
-.home .ocean-sky { z-index: -2; }
+.hero-art { display: flex; justify-content: center; }
+.bits { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); font-family: var(--mono); font-weight: 700; font-size: 1.2rem; }
+.bits span { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: var(--card-2); color: var(--mut); transition: color .3s, background .3s; }
+.bits span.flip { color: var(--acs); background: var(--acb); }
 .section-h { margin: 34px 0 12px; }
 .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .feature { display: flex; flex-direction: column; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
@@ -329,10 +311,9 @@ input[type=range] { accent-color: var(--ac); }
 .how-step { display: flex; gap: 12px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
 .how-n { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: var(--acb); color: var(--acs); border: 1px solid var(--ac); display: flex; align-items: center; justify-content: center; font-weight: 700; }
 @media (max-width: 760px) {
-  .hero { margin-top: 10px; }
+  .hero { grid-template-columns: 1fr; margin-top: 10px; }
+  .hero-art { display: none; }
   .role-buttons { grid-template-columns: 1fr; }
-  .role-btn { min-height: 88px; padding: 16px 18px; }
-  .ocean-veil { background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 84%, transparent), color-mix(in srgb, var(--bg) 70%, transparent)); }
 }
 
 /* ---------- поля ввода кодов ---------- */
@@ -397,7 +378,8 @@ input[type=email]:focus, input[type=password]:focus { border-color: var(--ac); }
 
 /* тёмная тема — минимализм: без теней и лишних рамок */
 :root[data-theme="dark"] .card, :root[data-theme="dark"] .tcard, :root[data-theme="dark"] .feature,
-:root[data-theme="dark"] .how-step { box-shadow: none; }
+:root[data-theme="dark"] .how-step, :root[data-theme="dark"] .role-btn { box-shadow: none; }
+:root[data-theme="dark"] .bits span { background: transparent; }
 @media (max-width: 600px) { .hide-sm { display: none; } }
 
 /* ---------- уроки в теме ---------- */
