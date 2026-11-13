@@ -128,6 +128,10 @@ function removeRow(name, row) { sheet(name).deleteRow(row); }
 
 // ---------- помощники ----------
 
+/** Логин учителя (старые учителя входили по почте — она тоже подходит). */
+var LOGIN_RE = /^[a-zа-яё0-9_.@-]{3,40}$/;
+function loginOf(r) { return String(r.login != null ? r.login : r.email || "").trim().toLowerCase(); }
+
 function now() { return new Date().toISOString(); }
 function randDigits(n) { var s = ""; for (var i = 0; i < n; i++) s += Math.floor(Math.random() * 10); return s; }
 function randToken() { return Utilities.getUuid(); }
@@ -175,18 +179,18 @@ function newSession(email) {
 function route(r) {
   switch (r.action) {
     case "teacherRegister": {
-      var email = String(r.email || "").trim().toLowerCase();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail("Введите правильный адрес почты");
+      var email = loginOf(r);   // в столбце email теперь лежит логин учителя
+      if (!LOGIN_RE.test(email)) return fail("Логин — от 3 до 30 символов: буквы, цифры, точка, дефис или _");
       if (String(r.password || "").length < 6) return fail("Пароль — не меньше 6 символов");
-      if (rows("Teachers").some(function (t) { return t.email === email; })) return fail("Учитель с такой почтой уже зарегистрирован. Войдите.");
+      if (rows("Teachers").some(function (t) { return t.email === email; })) return fail("Такой логин уже занят. Придумайте другой или войдите.");
       var salt = randToken();
       add("Teachers", { email: email, salt: salt, hash: hashPassword(salt, String(r.password)), created: now() });
       return { ok: true, token: newSession(email), email: email };
     }
     case "teacherLogin": {
-      var em = String(r.email || "").trim().toLowerCase();
+      var em = loginOf(r);
       var t = rows("Teachers").filter(function (x) { return x.email === em; })[0];
-      if (!t || hashPassword(t.salt, String(r.password || "")) !== t.hash) return fail("Неверная почта или пароль");
+      if (!t || hashPassword(t.salt, String(r.password || "")) !== t.hash) return fail("Неверный логин или пароль");
       return { ok: true, token: newSession(em), email: em };
     }
     case "teacherLogout": {

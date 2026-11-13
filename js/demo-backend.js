@@ -24,6 +24,9 @@ function teacherBy(db, token) {
   const email = db.sessions[token];
   return email && db.teachers[email] ? email : null;
 }
+const LOGIN_RE = /^[a-zа-яё0-9_.@-]{3,40}$/;
+const loginOf = r => String(r.login ?? r.email ?? "").trim().toLowerCase();
+
 function ownClass(db, email, classId) {
   const c = db.classes[classId];
   return c && c.teacher === email ? c : null;
@@ -47,10 +50,10 @@ export async function handle(req) {
 async function route(db, r) {
   switch (r.action) {
     case "teacherRegister": {
-      const email = String(r.email || "").trim().toLowerCase();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail("Введите правильный адрес почты");
+      const email = loginOf(r);   // логин учителя (поле называется email ради совместимости)
+      if (!LOGIN_RE.test(email)) return fail("Логин — от 3 до 30 символов: буквы, цифры, точка, дефис или _");
       if (String(r.password || "").length < 6) return fail("Пароль — не меньше 6 символов");
-      if (db.teachers[email]) return fail("Учитель с такой почтой уже зарегистрирован. Войдите.");
+      if (db.teachers[email]) return fail("Такой логин уже занят. Придумайте другой или войдите.");
       const salt = randToken();
       db.teachers[email] = { salt, hash: await sha256(salt + r.password), created: now() };
       const token = randToken();
@@ -58,9 +61,9 @@ async function route(db, r) {
       return { ok: true, token, email };
     }
     case "teacherLogin": {
-      const email = String(r.email || "").trim().toLowerCase();
+      const email = loginOf(r);
       const t = db.teachers[email];
-      if (!t || (await sha256(t.salt + r.password)) !== t.hash) return fail("Неверная почта или пароль");
+      if (!t || (await sha256(t.salt + r.password)) !== t.hash) return fail("Неверный логин или пароль");
       const token = randToken();
       db.sessions[token] = email;
       return { ok: true, token, email };

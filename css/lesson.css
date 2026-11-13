@@ -304,3 +304,16 @@ body.app .seg button.on { background: var(--g-glass); color: var(--g-text); box-
 .tc-del { position: absolute; top: 6px; right: 6px; opacity: 0; padding: 4px 8px; }
 .tc-card:hover .tc-del, .tc-del.armed { opacity: 1; }
 @media (max-width: 800px) { .tc-kpis { grid-template-columns: repeat(2, 1fr); } }
+
+/* ---------- круглее везде и отступ под шапкой ---------- */
+body.app, body.lesson-page { --r: 14px; }
+body.app .topbar { margin: 12px 16px 22px; border-radius: 26px; }
+.lesson-page .topbar { border-radius: 26px; }
+body.app .card, body.app .tcard, body.app .stat, .lesson-page .glass, body.app .glass, .lesson-page #stage > .card { border-radius: 26px; }
+body.app .feedback, .lesson-page .feedback { border-radius: 18px; }
+body.app input[type=text], body.app input[type=email], body.app input[type=password], body.app input[type=number], body.app textarea, body.app select,
+.lesson-page input[type=text], .lesson-page textarea, .lesson-page select { border-radius: 16px; }
+body.app .choice, .lesson-page .choice, .sq-card, .tile { border-radius: 16px; }
+.lesson-page .illu, .lp-q { border-radius: 22px; }
+.lp-lh, .lp-st, .lp-goal { border-radius: 16px; }
+.lp-head { border-radius: 26px; }

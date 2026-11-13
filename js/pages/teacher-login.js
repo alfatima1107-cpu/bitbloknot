@@ -1,4 +1,4 @@
-// Вход и регистрация учителя по почте и паролю.
+// Вход и регистрация учителя по логину и паролю.
 import { DEMO, call } from "../api.js";
 import { keepTeacher, teacher } from "../session.js";
 import { $, $$, page } from "../ui.js";
@@ -27,8 +27,8 @@ $("#form").addEventListener("input", () => err.classList.add("hidden"));
 
 $("#form").addEventListener("submit", async e => {
   e.preventDefault();
-  const email = $("#email").value.trim(), password = $("#password").value;
-  if (!email) return showError("Введите почту");
+  const login = $("#email").value.trim(), password = $("#password").value;
+  if (!login) return showError("Введите логин");
   if (!password) return showError("Введите пароль");
   if (mode === "register") {
     if (password.length < 6) return showError("Пароль — не меньше 6 символов");
@@ -36,7 +36,7 @@ $("#form").addEventListener("submit", async e => {
   }
   btn.disabled = true;
   try {
-    const res = await call(mode === "register" ? "teacherRegister" : "teacherLogin", { email, password });
+    const res = await call(mode === "register" ? "teacherRegister" : "teacherLogin", { login, password });
     keepTeacher(res.token, res.email);
     location.href = "teacher.html";
   } catch (ex) {

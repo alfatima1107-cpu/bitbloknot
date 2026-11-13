@@ -1,60 +1,85 @@
 <!doctype html>
-<html lang="ru" data-theme="dark" data-accent="blue">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>БитБлокнот — информатика 7 класс</title>
   <meta name="description" content="Интерактивный репетитор по информатике для 7 класса: уроки, тренажёры, бесконечные задачи и кабинет учителя.">
-  <script>try { var d = document.documentElement; d.dataset.theme = localStorage.getItem("bb-theme") || "dark"; d.dataset.accent = localStorage.getItem("bb-accent") || "blue"; } catch (e) {}</script>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237aa7ff' stroke-width='2'%3E%3Cpath d='M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM9 4v16M13 8h2M13 12h2'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232f6bff' stroke-width='2'%3E%3Cpath d='M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM9 4v16M13 8h2M13 12h2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/landing.css">
 </head>
 <body>
-  <header id="topbar"></header>
-  <main class="wrap">
-    <section class="hero">
-      <div class="hero-text">
-        <div class="hero-tag mono">01000010 01000010 · 7 класс</div>
-        <h1>Информатика, которую<br>можно потрогать</h1>
-        <p class="hero-lead">БитБлокнот — интерактивный репетитор по информатике для 7 класса.
-          Короткие уроки с картинками, тренажёры-игры, бесконечные задачи и подсказки,
-          которые понимают, <b>в чём именно</b> ты ошибся.</p>
-        <div class="role-buttons">
-          <a class="role-btn" href="student-login.html" id="btn-student">
-            <span class="role-icon"><i data-icon="backpack"></i></span>
-            <span><b>Я ученик</b><span class="small muted">Войти по коду класса</span></span>
-          </a>
-          <a class="role-btn" href="teacher-login.html" id="btn-teacher">
-            <span class="role-icon"><i data-icon="teacher"></i></span>
-            <span><b>Я учитель</b><span class="small muted">Создать класс и видеть прогресс</span></span>
-          </a>
-        </div>
-        <a class="btn ghost small" href="solo.html"><i data-icon="book"></i> Учиться самостоятельно, без класса</a>
-      </div>
-    </section>
+  <!-- Главная: описание проекта и вход. Своё оформление (css/landing.css), по мотивам референса ChronoTask. -->
+  <nav class="ln-nav">
+    <a class="ln-logo" href="index.html"><i data-icon="notebook"></i> БитБлокнот</a>
+    <div class="ln-links"><a href="#features">Возможности</a><a href="#how">Как это работает</a><a href="#teacher">Учителю</a></div>
+    <a class="ln-btn ln-btn-ghost" href="student-login.html">Войти</a>
+  </nav>
 
-    <h2 class="section-h">Что внутри</h2>
-    <div class="features">
-      <div class="feature"><span class="f-icon"><i data-icon="book"></i></span><b>12 тем курса</b><span class="muted small">Устройства, файлы, сети, двоичный код, кодирование текста, картинок и звука, документы, графика, презентации — по ФГОС.</span></div>
-      <div class="feature"><span class="f-icon"><i data-icon="flask"></i></span><b>Тренажёры-игры</b><span class="muted small">«Собери компьютер», «Пиксельный художник», «Звукозапись», «Шифровальщик», «Лестница единиц» и другие.</span></div>
-      <div class="feature"><span class="f-icon"><i data-icon="infinity"></i></span><b>Бесконечные задачи</b><span class="muted small">Задачи генерируются заново каждый раз, три уровня сложности подстраиваются под ученика.</span></div>
-      <div class="feature"><span class="f-icon"><i data-icon="search"></i></span><b>Диагностика ошибок</b><span class="muted small">«Похоже, ты перепутал биты и байты» — подсказка именно про твою ошибку, а не просто «неверно».</span></div>
-      <div class="feature"><span class="f-icon"><i data-icon="brain"></i></span><b>Умный репетитор</b><span class="muted small">Советует, чем заняться сегодня, и возвращает к сданным темам через 1, 3 и 7 дней.</span></div>
-      <div class="feature"><span class="f-icon"><i data-icon="users"></i></span><b>Кабинет учителя</b><span class="muted small">Учитель создаёт класс, раздаёт коды входа и видит прогресс каждого ученика по всем темам.</span></div>
+  <header class="ln-hero">
+    <!-- парящие карточки вокруг заголовка -->
+    <div class="ln-float f-note"><b>Шпаргалка</b><span>1 байт = 8 бит<br>1 Кбайт = 1024 байта</span></div>
+    <div class="ln-float f-tile f-check"><i data-icon="check"></i></div>
+    <div class="ln-float f-tile f-app"><span></span><span></span><span></span><span></span></div>
+    <div class="ln-float f-goal"><span class="ln-ring" style="--p:60"><b>6/10</b></span><div><b>Цель дня</b><small>ещё 4 минуты</small></div></div>
+    <div class="ln-float f-today">
+      <b>Сегодня</b>
+      <div class="t-row"><i class="t-dot" style="--c:#7b6cf6"></i><span>Урок · Двоичный код</span><em>75%</em><u style="--w:75%;--c:#7b6cf6"></u></div>
+      <div class="t-row"><i class="t-dot" style="--c:#f2a65e"></i><span>Тренажёр · Лестница единиц</span><em>40%</em><u style="--w:40%;--c:#f2a65e"></u></div>
     </div>
+    <div class="ln-float f-tools"><b>12 тренажёров</b>
+      <div class="f-icons"><span style="--c:#7b6cf6"><i data-icon="chip"></i></span><span style="--c:#e98aa8"><i data-icon="camera"></i></span><span style="--c:#4fbf8f"><i data-icon="headphones"></i></span></div></div>
 
-    <h2 class="section-h">Как начать</h2>
-    <div class="how">
-      <div class="how-step"><span class="how-n mono">1</span><div><b>Учитель создаёт класс</b><br><span class="muted small">Например «7Б» — система выдаёт уникальный код класса из 6 цифр.</span></div></div>
-      <div class="how-step"><span class="how-n mono">2</span><div><b>Добавляет учеников</b><br><span class="muted small">Каждый получает личный код из 4 цифр. Карточки входа можно распечатать.</span></div></div>
-      <div class="how-step"><span class="how-n mono">3</span><div><b>Ученик входит</b><br><span class="muted small">Код класса + личный код, и вперёд, к первому уроку!</span></div></div>
+    <div class="ln-chip">информатика · 7 класс · по ФГОС</div>
+    <h1>Учись, решай и понимай<br><span>информатику в одном месте</span></h1>
+    <p class="ln-lead">БитБлокнот — интерактивный репетитор: короткие уроки, тренажёры-игры, бесконечные задачи и подсказки,
+      которые понимают, в чём именно ты ошибся.</p>
+    <div class="ln-cta">
+      <a class="ln-btn ln-btn-primary ln-big" href="solo.html"><i data-icon="rocket"></i> Учиться самостоятельно</a>
+      <a class="ln-btn ln-btn-ghost ln-big" href="student-login.html"><i data-icon="backpack"></i> Я ученик класса</a>
     </div>
-  </main>
+    <a class="ln-teacher-link" href="teacher-login.html"><i data-icon="teacher"></i> Я учитель — создать класс</a>
+  </header>
+
+  <section class="ln-section" id="features">
+    <h2>Что умеет БитБлокнот</h2>
+    <p class="ln-sub">Весь курс 7 класса на год: 12 тем, 48 уроков, 470 вопросов</p>
+    <div class="ln-grid">
+      <div class="ln-card"><span class="ln-ic" style="--c:#7b6cf6"><i data-icon="book"></i></span><b>48 коротких уроков</b><p>Шаг за шагом, с живыми иллюстрациями и вопросом «Проверь себя» в каждом шаге.</p></div>
+      <div class="ln-card"><span class="ln-ic" style="--c:#f2a65e"><i data-icon="flask"></i></span><b>12 тренажёров-игр</b><p>Собери компьютер, нарисуй пиксельную картинку, оцифруй звук, исправь слайд.</p></div>
+      <div class="ln-card"><span class="ln-ic" style="--c:#4fbf8f"><i data-icon="infinity"></i></span><b>Бесконечные задачи</b><p>Каждый раз новые. Три верных ответа подряд — задачи становятся сложнее.</p></div>
+      <div class="ln-card"><span class="ln-ic" style="--c:#e98aa8"><i data-icon="search"></i></span><b>Понимает ошибку</b><p>Не просто «неверно», а «похоже, ты перепутал биты и байты» — и пошаговое решение.</p></div>
+      <div class="ln-card"><span class="ln-ic" style="--c:#6aa6f0"><i data-icon="cards"></i></span><b>Словарик и карточки</b><p>101 термин курса: подсказки прямо в тексте и флеш-карточки с повторением.</p></div>
+      <div class="ln-card"><span class="ln-ic" style="--c:#e7b54a"><i data-icon="trophy"></i></span><b>Цель дня и достижения</b><p>Серия дней, 14 значков и праздник в конце каждого урока.</p></div>
+    </div>
+  </section>
+
+  <section class="ln-section" id="how">
+    <h2>Как это работает</h2>
+    <div class="ln-steps">
+      <div class="ln-step"><span>1</span><b>Учитель создаёт класс</b><p>Регистрируется по логину и паролю, система выдаёт код класса из 6 цифр.</p></div>
+      <div class="ln-step"><span>2</span><b>Вписывает учеников</b><p>Каждый получает личный код из 4 цифр. Карточки входа можно распечатать.</p></div>
+      <div class="ln-step"><span>3</span><b>Ученик учится</b><p>Входит по двум кодам — или учится сам, без класса, просто введя имя.</p></div>
+    </div>
+  </section>
+
+  <section class="ln-section ln-teacher" id="teacher">
+    <div><h2>Учителю</h2>
+      <p class="ln-sub" style="text-align:left">Журнал за две недели, прогресс каждого ученика, частые ошибки и метка «нужна помощь». Данные хранятся в Google Таблице.</p>
+      <a class="ln-btn ln-btn-primary" href="teacher-login.html">Открыть кабинет учителя <i data-icon="arrow-right"></i></a></div>
+    <div class="ln-card ln-mini-board">
+      <div class="mb-row"><span class="mb-av" style="--c:#e98aa8">АС</span>Аня С.<em style="--c:#4fbf8f">92%</em></div>
+      <div class="mb-row"><span class="mb-av" style="--c:#6aa6f0">ДК</span>Даниил К.<em style="--c:#4fbf8f">78%</em></div>
+      <div class="mb-row"><span class="mb-av" style="--c:#f2a65e">ПИ</span>Петя И.<em style="--c:#e7b54a">54%</em></div>
+      <div class="mb-row help"><span class="mb-av" style="--c:#8a93a6">ОС</span>Олег С.<em style="--c:#e98aa8">нужна помощь</em></div>
+    </div>
+  </section>
+
+  <footer class="ln-footer">БитБлокнот · проект для конференции «Инженеры будущего» · сделано методом вайб-кодинга</footer>
 
   <script type="module">
-    import { page } from "./js/ui.js";
-    page({ home: "index.html" });
+    import { fillIcons } from "./js/icons.js";
+    fillIcons();
   </script>
-  <script type="module" src="js/home-ocean.js"></script>
 </body>
 </html>
