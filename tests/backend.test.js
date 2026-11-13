@@ -16,11 +16,15 @@ function fakeGoogle() {
       getLastRow: () => data.length,
       getRange(a, b, h, w) {
         if (typeof a === "string") return { setNumberFormat() {} };
-        return {
+        const range = {
           setFontWeight() {},
+          setNumberFormat() { return range; },
+          // как настоящая таблица без текстового формата: строку из цифр превращаем в число
+          setValues(vals) { vals.forEach((row, i) => { data[a - 1 + i] = row.map(v => String(v)); }); return range; },
           getValues: () => data.slice(a - 1, a - 1 + h).map(r => Array.from({ length: w }, (_, j) => r[b - 1 + j] ?? "")),
           setValue: v => { data[a - 1][b - 1] = String(v); },
         };
+        return range;
       },
       deleteRow: r => data.splice(r - 1, 1),
       data,
@@ -50,6 +54,34 @@ function server() {
   const call = req => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(req) } }));
   return { call, sheets: g.sheets };
 }
+
+test("повтор запроса с тем же rid не создаёт второй класс и учеников", () => {
+  const { call } = server();
+  const { token } = call({ action: "teacherRegister", email: "r@s.test", password: "secret1" });
+  const a = call({ action: "createClass", token, name: "7А", rid: "same-1" });
+  const b = call({ action: "createClass", token, name: "7А", rid: "same-1" });
+  assert.deepEqual(a, b, "второй раз — тот же ответ");
+  assert.equal(call({ action: "teacherClasses", token }).classes.length, 1);
+  call({ action: "addStudents", token, classId: a.class.id, names: ["Петя"], rid: "same-2" });
+  call({ action: "addStudents", token, classId: a.class.id, names: ["Петя"], rid: "same-2" });
+  assert.equal(call({ action: "classDetail", token, classId: a.class.id }).students.length, 1);
+  call({ action: "createClass", token, name: "7Б", rid: "other" });
+  assert.equal(call({ action: "teacherClasses", token }).classes.length, 2, "другой rid — новый класс");
+});
+
+test("код с ведущим нулём, который таблица превратила в число, всё равно работает", () => {
+  const { call, sheets } = server();
+  const { token } = call({ action: "teacherRegister", email: "z@s.test", password: "secret1" });
+  const { class: c } = call({ action: "createClass", token, name: "7В" });
+  call({ action: "addStudents", token, classId: c.id, names: ["Аня"] });
+  const row = sheets.Students.data[1];
+  row[1] = "123";   // так выглядит испорченный код «0123»
+  assert.equal(call({ action: "classDetail", token, classId: c.id }).students[0].code, "0123");
+  assert.ok(call({ action: "studentLogin", classCode: c.code, code: "0123" }).ok, "входит по 0123");
+  assert.ok(call({ action: "studentSave", classCode: c.code, code: "0123", progress: { steps: {} } }).ok);
+  assert.ok(call({ action: "deleteStudent", token, classId: c.id, code: "0123" }).ok);
+  assert.equal(call({ action: "classDetail", token, classId: c.id }).students.length, 0, "и удаляется");
+});
 
 test("учитель: регистрация, вход, неверный пароль", () => {
   const { call, sheets } = server();

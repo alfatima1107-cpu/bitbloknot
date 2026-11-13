@@ -4,7 +4,7 @@ import { DEMO, call } from "../api.js";
 import * as courseMod from "../course.js";
 import { normalize } from "../progress.js";
 import { requireTeacher, teacherLogout } from "../session.js";
-import { $, $$, esc, fillIcons, icon, page, param, setBack } from "../ui.js";
+import { $, $$, esc, fillIcons, icon, page, param, setBack, toast } from "../ui.js";
 
 const me = requireTeacher();
 page({ teacher: me.email, home: "teacher.html", onLogout: teacherLogout, back: "index.html" });
@@ -20,6 +20,38 @@ async function api(action, data = {}) {
     throw ex;
   }
 }
+
+/**
+ * Кнопка на время запроса выключена и показывает, что идёт работа.
+ * Сервер Google иногда думает 3–6 секунд — без этого второй щелчок создавал второй класс или второго ученика.
+ */
+async function busy(btn, text, fn) {
+  if (!btn || btn.disabled) return;
+  const html = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `${icon("clock")} ${text}`;
+  try { return await fn(); } finally {
+    if (btn.isConnected) { btn.disabled = false; btn.innerHTML = html; }
+  }
+}
+
+/**
+ * Подтверждение без системного окна confirm() (в некоторых браузерах оно не показывается и сразу отвечает «нет»):
+ * первый щелчок превращает кнопку в «Точно удалить?», второй в течение 4 секунд — удаляет.
+ */
+function armed(btn, label = "Точно удалить?") {
+  if (btn.dataset.armed) return true;
+  const html = btn.innerHTML;
+  btn.dataset.armed = "1";
+  btn.classList.add("armed");
+  btn.innerHTML = label;
+  setTimeout(() => {
+    if (btn.isConnected && !btn.disabled) { delete btn.dataset.armed; btn.classList.remove("armed"); btn.innerHTML = html; }
+  }, 4000);
+  return false;
+}
+
+const fail = ex => toast("alert", "Не получилось", ex.message);
 
 function lastSeenText(iso) {
   if (!iso) return "ещё не входил";
@@ -65,10 +97,12 @@ async function showClasses() {
     const name = $("#class-name").value.trim();
     const errEl = $("#create-error");
     if (!name) { errEl.textContent = "Введите название класса"; errEl.classList.remove("hidden"); return; }
-    try {
-      const { class: c } = await api("createClass", { name });
-      showClass(c.id, `Класс ${c.name} создан! Код класса: ${c.code}. Теперь добавьте учеников.`);
-    } catch (ex) { errEl.textContent = ex.message; errEl.classList.remove("hidden"); }
+    await busy(e.target.querySelector("button[type=submit]"), "Создаю…", async () => {
+      try {
+        const { class: c } = await api("createClass", { name });
+        showClass(c.id, `Класс ${c.name} создан! Код класса: ${c.code}. Теперь добавьте учеников.`);
+      } catch (ex) { errEl.textContent = ex.message; errEl.classList.remove("hidden"); }
+    });
   });
 }
 
@@ -119,27 +153,36 @@ async function showClass(id, notice = "") {
 
   $("#back").onclick = e => { e.preventDefault(); showClasses(); };
   $("#refresh").onclick = () => showClass(id);
-  $("#del-class").onclick = async () => {
-    if (!confirm(`Удалить класс ${c.name} вместе со всеми учениками и их прогрессом? Это нельзя отменить.`)) return;
-    await api("deleteClass", { classId: id });
-    showClasses();
+  $("#del-class").onclick = async e => {
+    const btn = e.currentTarget;
+    if (!armed(btn, `Удалить ${esc(c.name)} со всеми учениками?`)) return;
+    await busy(btn, "Удаляю…", async () => {
+      try { await api("deleteClass", { classId: id }); showClasses(); } catch (ex) { fail(ex); }
+    });
   };
   $("#add-form").addEventListener("submit", async e => {
     e.preventDefault();
     const names = $("#names").value.split("\n").map(x => x.trim()).filter(Boolean);
     const errEl = $("#add-error");
     if (!names.length) { errEl.textContent = "Введите хотя бы одно имя"; errEl.classList.remove("hidden"); return; }
-    try {
-      const { students } = await api("addStudents", { classId: id, names });
-      showClass(id, `Добавлено: ${students.length}. Распечатайте карточки входа, чтобы раздать коды.`);
-    } catch (ex) { errEl.textContent = ex.message; errEl.classList.remove("hidden"); }
+    await busy(e.target.querySelector("button[type=submit]"), "Добавляю…", async () => {
+      try {
+        const { students } = await api("addStudents", { classId: id, names });
+        showClass(id, `Добавлено: ${students.length}. Распечатайте карточки входа, чтобы раздать коды.`);
+      } catch (ex) { errEl.textContent = ex.message; errEl.classList.remove("hidden"); }
+    });
   });
   $$("[data-del]").forEach(b => b.addEventListener("click", async e => {
     e.stopPropagation();
     const r = rows.find(x => x.s.code === b.dataset.del);
-    if (!confirm(`Удалить ученика «${r.s.name}» из класса? Его прогресс будет потерян.`)) return;
-    await api("deleteStudent", { classId: id, code: r.s.code });
-    showClass(id, `Ученик «${r.s.name}» удалён.`);
+    if (!armed(b, "Удалить?")) return;
+    await busy(b, "", async () => {
+      try {
+        await api("deleteStudent", { classId: id, code: r.s.code });
+        b.closest("tr").remove();   // сразу убираем строку, потом перечитываем класс с сервера
+        showClass(id, `Ученик «${r.s.name}» удалён.`);
+      } catch (ex) { fail(ex); }
+    });
   }));
   $$("[data-row]").forEach(tr => tr.addEventListener("click", () => {
     $$("[data-row]").forEach(x => x.classList.toggle("picked-row", x === tr));

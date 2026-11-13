@@ -24,7 +24,12 @@ async function demoBackend() {
  * Вызов действия на сервере. keepalive — запрос долетит, даже если ученик сразу ушёл на другую страницу.
  * Content-Type text/plain — так браузер не делает лишний «предварительный» запрос, который Apps Script не понимает.
  */
+/** Действия, которые что-то записывают: им даём номер запроса rid, чтобы сервер не выполнил их дважды. */
+const WRITES = new Set(["teacherRegister", "createClass", "renameClass", "deleteClass", "addStudents", "deleteStudent"]);
+const newRid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 export async function call(action, data = {}, { keepalive = false } = {}) {
+  if (WRITES.has(action) && !data.rid) data = { ...data, rid: newRid() };
   let res;
   if (DEMO) {
     res = await (await demoBackend()).handle({ action, ...data });

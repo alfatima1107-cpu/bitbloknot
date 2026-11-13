@@ -43,7 +43,15 @@ function doPost(e) {
   var lock = LockService.getScriptLock();   // запросы выполняются по очереди — никто не затрёт чужие данные
   try {
     lock.waitLock(20000);
-    return json(route(req));
+    // Защита от повторов: у каждого «записывающего» запроса есть номер rid. Если такой запрос уже выполняли
+    // (двойной щелчок, повтор сети), отдаём прошлый ответ и ничего не создаём второй раз.
+    var cache = CacheService.getScriptCache();
+    var rid = req.rid ? "rid:" + String(req.rid).slice(0, 80) : null;
+    var seen = rid && cache.get(rid);
+    if (seen) return json(JSON.parse(seen));
+    var res = route(req);
+    if (rid) cache.put(rid, JSON.stringify(res), 600);
+    return json(res);
   } catch (err) {
     return json({ ok: false, error: "Ошибка сервера: " + err.message });
   } finally {
@@ -88,6 +96,8 @@ function rows(name) {
       var x = v[j];
       o[c] = x === "" ? null : x instanceof Date ? x.toISOString() : String(x);
     });
+    // Таблица могла превратить код «0123» в число 123 — возвращаем ведущие нули
+    if (o.code != null && CODE_LEN[name]) o.code = padCode(o.code, CODE_LEN[name]);
     return o;
   });
 }
@@ -96,7 +106,17 @@ function rows(name) {
 function safe(v) { return v == null ? "" : String(v).replace(/^[=+@]+/, ""); }
 
 function add(name, obj) {
-  sheet(name).appendRow(SHEETS[name].map(function (c) { return safe(obj[c]); }));
+  // Не appendRow: он превращает «0123» в число 123. Сначала ставим строке формат «текст», потом пишем.
+  var sh = sheet(name), cols = SHEETS[name];
+  sh.getRange(sh.getLastRow() + 1, 1, 1, cols.length).setNumberFormat("@")
+    .setValues([cols.map(function (c) { return safe(obj[c]); })]);
+}
+
+/** Длина кодов: личный код ученика — 4 цифры, код класса — 6. */
+var CODE_LEN = { Students: 4, Classes: 6 };
+function padCode(v, n) {
+  var s = String(v == null ? "" : v).trim();
+  return /^\d+$/.test(s) && s.length < n ? ("000000" + s).slice(-n) : s;
 }
 
 function setCell(name, row, col, value) {
@@ -245,12 +265,12 @@ function route(r) {
       var me7 = teacherBy(r.token);
       var c7 = me7 && ownClass(me7, r.classId);
       if (!c7) return fail("Класс не найден");
-      var st7 = studentsOf(c7.id).filter(function (s) { return s.code === String(r.code); })[0];
+      var st7 = studentsOf(c7.id).filter(function (s) { return s.code === padCode(r.code, 4); })[0];
       if (st7) removeRow("Students", st7._row);
       return { ok: true };
     }
     case "studentLogin": {
-      var classCode = String(r.classCode || "").trim(), pcode = String(r.code || "").trim();
+      var classCode = padCode(r.classCode, 6), pcode = padCode(r.code, 4);
       var cache = CacheService.getScriptCache();
       var lockedUntil = Number(cache.get("lock:" + classCode) || 0);
       var left = Math.ceil((lockedUntil - Date.now()) / 1000);
@@ -275,8 +295,8 @@ function route(r) {
       return { ok: true, student: pub };
     }
     case "studentSave": {
-      var c9 = rows("Classes").filter(function (c) { return c.code === String(r.classCode); })[0];
-      var s9 = c9 && studentsOf(c9.id).filter(function (s) { return s.code === String(r.code); })[0];
+      var c9 = rows("Classes").filter(function (c) { return c.code === padCode(r.classCode, 6); })[0];
+      var s9 = c9 && studentsOf(c9.id).filter(function (s) { return s.code === padCode(r.code, 4); })[0];
       if (!s9) return fail("Ученик не найден — возможно, учитель удалил его из класса");
       if (r.progress !== undefined) {
         var p = r.progress || {};
